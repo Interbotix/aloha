@@ -1,27 +1,43 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(aloha)
 
-find_package(catkin REQUIRED COMPONENTS)
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 
-catkin_python_setup()
+ament_python_install_package(${PROJECT_NAME})
+
+# catkin_python_setup()
+
+# install(
+#   PROGRAMS
+#     scripts/auto_record.sh
+#   DESTINATION
+#     ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts
+# )
 
 install(
-  PROGRAMS
-    scripts/auto_record.sh
+    PROGRAMS
+      scripts/dual_side_teleop.py
+      scripts/get_episode_len.py
+      scripts/one_side_teleop.py
+      scripts/record_episodes.py
+      scripts/replay_and_record_episodes.py
+      scripts/replay_episodes.py
+      scripts/sleep.py
   DESTINATION
-    ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts
+    lib/${PROJECT_NAME}
 )
 
-catkin_package()
+# catkin_install_python(
+#   PROGRAMS
+#     scripts/dual_side_teleop.py
+#     scripts/get_episode_len.py
+#     scripts/one_side_teleop.py
+#     scripts/record_episodes.py
+#     scripts/replay_and_record_episodes.py
+#     scripts/replay_episodes.py
+#     scripts/sleep.py
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
-catkin_install_python(
-  PROGRAMS
-    scripts/dual_side_teleop.py
-    scripts/get_episode_len.py
-    scripts/one_side_teleop.py
-    scripts/record_episodes.py
-    scripts/replay_and_record_episodes.py
-    scripts/replay_episodes.py
-    scripts/sleep.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+ament_package()
