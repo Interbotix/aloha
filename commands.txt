@@ -1,8 +1,23 @@
-udevadm info --name=/dev/ttyUSB0 --attribute-walk | grep serial
+# Use the command below to find the serial number of the device at /dev/ttyUSB0
+# udevadm info --name=/dev/ttyUSB0 --attribute-walk | grep serial
 
+# INTERBOTIX ARMS
 SUBSYSTEM=="tty", ATTRS{serial}=="FT6Z5N1W", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_puppet_left"
 SUBSYSTEM=="tty", ATTRS{serial}=="FT66U3A8", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_master_right"
 SUBSYSTEM=="tty", ATTRS{serial}=="FT66U2XR", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_master_left"
 SUBSYSTEM=="tty", ATTRS{serial}=="FT6Z5NYV", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_puppet_right"
 
-sudo udevadm control --reload && sudo udevadm trigger
+# # USB
+# SUBSYSTEM=="video4linux", ATTRS{serial}=="", ATTR{index}=="0", ATTRS{idProduct}=="085c", ATTR{device/latency_timer}="1", SYMLINK+="CAM_RIGHT_WRIST"
+# SUBSYSTEM=="video4linux", ATTRS{serial}=="", ATTR{index}=="0", ATTRS{idProduct}=="085c", ATTR{device/latency_timer}="1", SYMLINK+="CAM_RIGHT_WRIST"
+# SUBSYSTEM=="video4linux", ATTRS{serial}=="", ATTR{index}=="0", ATTRS{idProduct}=="085c", ATTR{device/latency_timer}="1", SYMLINK+="CAM_RIGHT_WRIST"
+# SUBSYSTEM=="video4linux", ATTRS{serial}=="", ATTR{index}=="0", ATTRS{idProduct}=="085c", ATTR{device/latency_timer}="1", SYMLINK+="CAM_RIGHT_WRIST"
+
+# REALSENSE
+SUBSYSTEM=="video4linux", ATTRS{serial}=="133323070632", ATTR{index}=="0", ATTRS{idProduct}=="0b5b", ATTR{device/latency_timer}="1", SYMLINK+="CAM_RIGHT_WRIST"
+SUBSYSTEM=="video4linux", ATTRS{serial}=="133323070814", ATTR{index}=="0", ATTRS{idProduct}=="0b5b", ATTR{device/latency_timer}="1", SYMLINK+="CAM_LEFT_WRIST"
+SUBSYSTEM=="video4linux", ATTRS{serial}=="133323070677", ATTR{index}=="0", ATTRS{idProduct}=="0b5b", ATTR{device/latency_timer}="1", SYMLINK+="CAM_LOW"
+# SUBSYSTEM=="video4linux", ATTRS{serial}=="", ATTR{index}=="0", ATTRS{idProduct}=="0b5b", ATTR{device/latency_timer}="1", SYMLINK+="CAM_HIGH"
+
+# Use the command to reload and trigger udev rules
+# sudo udevadm control --reload && sudo udevadm trigger

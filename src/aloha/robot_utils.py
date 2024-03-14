@@ -2,7 +2,11 @@ from collections import deque
 import time
 from typing import Sequence
 
-from aloha.constants import DT, IS_MOBILE
+from aloha.constants import (
+    COLOR_IMAGE_TOPIC_NAME,
+    DT,
+    IS_MOBILE,
+)
 from cv_bridge import CvBridge
 from interbotix_xs_modules.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointGroupCommand, JointSingleCommand
@@ -44,7 +48,8 @@ class ImageRecorder:
                 callback_func = self.image_cb_cam_right_wrist
             else:
                 raise NotImplementedError
-            rospy.Subscriber(f'/usb_{cam_name}/image_raw', Image, callback_func)
+            topic = COLOR_IMAGE_TOPIC_NAME.format(cam_name)
+            rospy.Subscriber(topic, Image, callback_func)
             if self.is_debug:
                 setattr(self, f'{cam_name}_timestamps', deque(maxlen=50))
         time.sleep(0.5)

@@ -5,7 +5,11 @@ import os
 import pathlib
 
 ### Set to True for Mobile ALOHA, False for stationary ALOHA
-IS_MOBILE = True
+IS_MOBILE = True  # for Mobile ALOHA
+# IS_MOBILE = False  # for stationary ALOHA
+
+COLOR_IMAGE_TOPIC_NAME = '{}/color/image_raw'  # for RealSense cameras
+# COLOR_IMAGE_TOPIC_NAME = 'usb_{}/image_raw'  # for USB cameras
 
 DATA_DIR = os.path.expanduser('~/data')
 TASK_CONFIGS = {
@@ -244,7 +248,7 @@ START_ARM_POSE = [0, -0.96, 1.16, 0, -0.3, 0, 0.02239, -0.02239,  0, -0.96, 1.16
 
 XML_DIR = str(pathlib.Path(__file__).parent.resolve()) + '/assets/' # note: absolute path
 
-LEADER_GRIPPER_CLOSE_THRESH = -0.3
+LEADER_GRIPPER_CLOSE_THRESH = 0.0
 
 # Left finger position limits (qpos[7]), right_finger = -1 * left_finger
 LEADER_GRIPPER_POSITION_OPEN = 0.0323

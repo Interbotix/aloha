@@ -94,7 +94,7 @@ class RealEnv:
             else:
                 raise ValueError((
                     'Requested to set up base but robot is not mobile. '
-                    "Hint: check 'IS_MOBILE' constant."
+                    "Hint: check the 'IS_MOBILE' constant."
                 ))
 
         self.recorder_left = Recorder('left', init_node=False)
@@ -104,6 +104,7 @@ class RealEnv:
 
     def setup_base(self):
         self.base = InterbotixSlateXS('aloha', init_node=False)
+        self.base.base.set_motor_torque(False)
 
     def setup_robots(self):
         setup_follower_bot(self.follower_bot_left)

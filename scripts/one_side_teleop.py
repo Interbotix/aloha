@@ -54,7 +54,7 @@ def press_to_start(leader_bot: InterbotixManipulatorXS):
     leader_bot.dxl.robot_torque_enable('single', 'gripper', False)
     print('Close the gripper to start')
     pressed = False
-    while not pressed:
+    while not rospy.is_shutdown() and not pressed:
         gripper_pos = get_arm_gripper_positions(leader_bot)
         if gripper_pos < LEADER_GRIPPER_CLOSE_THRESH:
             pressed = True

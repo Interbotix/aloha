@@ -5,6 +5,7 @@ import os
 import time
 
 from aloha.constants import (
+    DATA_DIR,
     FOLLOWER_GRIPPER_JOINT_OPEN,
     FPS,
     JOINT_NAMES,
@@ -106,6 +107,7 @@ def main(args):
 
     env = make_real_env(init_node=True, setup_base=True)
     env.reset()
+    env.base.base.set_motor_torque(True)
     obs_wheels = []
     obs_base = []
 
@@ -123,22 +125,23 @@ def main(args):
     obs_wheels = np.array(obs_wheels)
     obs_base = np.array(obs_base)
 
-    plt.plot(base_actions[:, 0], label='action_linear')
-    plt.plot(processed_base_actions[:, 0], '--', label='processed_action_linear')
-    plt.plot(obs_wheels[:, 0], '--', label='obs_wheels_linear')
-    plt.plot(obs_base[:, 0], '-.', label='obs_base_linear')
-    plt.plot()
-    plt.legend()
-    plt.savefig('replay_episodes_linear_vel.png', dpi=300)
+    if False:
+        plt.plot(base_actions[:, 0], label='action_linear')
+        plt.plot(processed_base_actions[:, 0], '--', label='processed_action_linear')
+        plt.plot(obs_wheels[:, 0], '--', label='obs_wheels_linear')
+        plt.plot(obs_base[:, 0], '-.', label='obs_base_linear')
+        plt.plot()
+        plt.legend()
+        plt.savefig('replay_episodes_linear_vel.png', dpi=300)
 
-    plt.clf()
-    plt.plot(base_actions[:, 1], label='action_angular')
-    plt.plot(processed_base_actions[:, 1], '--', label='processed_action_angular')
-    plt.plot(obs_wheels[:, 1], '--', label='obs_wheels_angular')
-    plt.plot(obs_base[:, 1], '-.', label='obs_base_angular')
-    plt.plot()
-    plt.legend()
-    plt.savefig('replay_episodes_angular_vel.png', dpi=300)
+        plt.clf()
+        plt.plot(base_actions[:, 1], label='action_angular')
+        plt.plot(processed_base_actions[:, 1], '--', label='processed_action_angular')
+        plt.plot(obs_wheels[:, 1], '--', label='obs_wheels_angular')
+        plt.plot(obs_base[:, 1], '-.', label='obs_base_angular')
+        plt.plot()
+        plt.legend()
+        plt.savefig('replay_episodes_angular_vel.png', dpi=300)
 
     # open
     move_grippers(
@@ -155,6 +158,7 @@ if __name__ == '__main__':
         action='store',
         type=str,
         help='Dataset dir.',
+        default=DATA_DIR,
         required=True,
     )
     parser.add_argument(

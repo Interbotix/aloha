@@ -10,6 +10,7 @@ from aloha.constants import (
     FOLLOWER_GRIPPER_JOINT_CLOSE,
     FOLLOWER_GRIPPER_JOINT_OPEN,
     FPS,
+    IS_MOBILE,
     LEADER_GRIPPER_CLOSE_THRESH,
     LEADER_GRIPPER_JOINT_MID,
     START_ARM_POSE,
@@ -119,7 +120,8 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
         robot_name='leader_right',
         init_node=False,
     )
-    env = make_real_env(init_node=False, setup_robots=False)
+
+    env = make_real_env(init_node=False, setup_robots=False, setup_base=IS_MOBILE)
 
     # saving dataset
     if not os.path.isdir(dataset_dir):
@@ -295,7 +297,7 @@ def main(args):
 
     dataset_name = f'episode_{episode_idx}'
     print(dataset_name + '\n')
-    while True:
+    while not rospy.is_shutdown():
         is_healthy = capture_one_episode(
             DT,
             max_timesteps,
@@ -353,7 +355,7 @@ if __name__ == '__main__':
         action='store',
         type=str,
         help='Task name.',
-        required=True
+        required=True,
     )
     parser.add_argument(
         '--episode_idx',
@@ -361,7 +363,7 @@ if __name__ == '__main__':
         type=int,
         help='Episode index.',
         default=None,
-        required=False
+        required=False,
     )
     main(vars(parser.parse_args()))
     # debug()

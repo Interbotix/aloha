@@ -94,14 +94,14 @@ def main() -> None:
         robot_model='vx300s',
         group_name='arm',
         gripper_name='gripper',
-        robot_name='puppet_left',
+        robot_name='follower_left',
         init_node=True,
     )
     follower_bot_right = InterbotixManipulatorXS(
         robot_model='vx300s',
         group_name='arm',
         gripper_name='gripper',
-        robot_name='puppet_right',
+        robot_name='follower_right',
         init_node=False,
     )
     leader_bot_left = InterbotixManipulatorXS(
