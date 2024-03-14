@@ -13,9 +13,9 @@
 
   <arg name="launch_driver"                       default="true"/>
   <arg name="use_sim"                             default="false"/>
-  <arg name="use_cameras"                         default="false"/>
+  <arg name="use_cameras"                         default="true"/>
 
-  <arg name="camera_type"                         default="usb"/> <!-- "realsense", "usb" -->
+  <arg name="camera_type"                         default="realsense"/> <!-- "realsense", "usb" -->
   <arg name="is_mobile"                           default="true"/>
   <arg name="use_base"                            default="$(arg is_mobile)"/>
 
@@ -111,7 +111,7 @@
       </node>
 
       <!-- cam_low is only launched if platform is a mobile ALOHA -->
-      <node name="usb_cam_low" pkg="usb_cam" type="usb_cam_node" output="screen" if="$(arg is_mobile)">
+      <node name="usb_cam_low" pkg="usb_cam" type="usb_cam_node" output="screen" unless="$(arg is_mobile)">
         <param name="video_device"    value="/dev/CAM_LOW"/>
         <param name="framerate"       value="60"/>
         <param name="image_width"     value="640"/>
@@ -154,38 +154,46 @@
     <group if="$(eval camera_type == 'realsense')">
       <group ns="$(arg cam_high_name)">
         <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
-          <arg name="usb_port_id"        value="/dev/CAM_HIGH"/>
+          <!-- <arg name="usb_port_id"        value="/dev/CAM_HIGH"/> -->
+          <arg name="serial_no"          value="128422271327"/>
           <arg name="color_width"        value="640"/>
           <arg name="color_height"       value="480"/>
           <arg name="color_fps"          default="60"/>
+          <arg name="enable_depth"       default="false"/>
         </include>
       </group>
 
       <group ns="$(arg cam_low_name)">
         <!-- cam_low is only launched if platform is a mobile ALOHA -->
-        <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml" if="$(arg is_mobile)">
-          <arg name="usb_port_id"        value="/dev/CAM_LOW"/>
+        <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml" unless="$(arg is_mobile)">
+          <!-- <arg name="usb_port_id"        value="/dev/CAM_LOW"/> -->
+          <arg name="serial_no"          value=""/>
           <arg name="color_width"        value="640"/>
           <arg name="color_height"       value="480"/>
           <arg name="color_fps"          default="60"/>
+          <arg name="enable_depth"       default="false"/>
         </include>
       </group>
 
       <group ns="$(arg cam_left_wrist_name)">
         <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
-          <arg name="usb_port_id"        value="/dev/CAM_LEFT_WRIST"/>
+          <!-- <arg name="usb_port_id"        value="/dev/CAM_LEFT_WRIST"/> -->
+          <arg name="serial_no"          value="128422270461"/>
           <arg name="color_width"        value="640"/>
           <arg name="color_height"       value="480"/>
           <arg name="color_fps"          default="60"/>
+          <arg name="enable_depth"       default="false"/>
         </include>
       </group>
 
       <group ns="$(arg cam_right_wrist_name)">
         <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
-          <arg name="usb_port_id"        value="/dev/CAM_RIGHT_WRIST"/>
+          <arg name="serial_no"          value="128422270115"/>
+          <!-- <arg name="usb_port_id"        value="/dev/CAM_RIGHT_WRIST"/> -->
           <arg name="color_width"        value="640"/>
           <arg name="color_height"       value="480"/>
           <arg name="color_fps"          default="60"/>
+          <arg name="enable_depth"       default="false"/>
         </include>
       </group>
     </group> <!-- if="$(eval camera_type == 'realsense')" -->
@@ -193,10 +201,11 @@
   </group> <!-- if="$(arg use_cameras)" -->
 
   <node
-    name="slate_driver"
+    name="slate_base"
     pkg="interbotix_slate_driver"
     type="slate_base"
     ns="mobile_base"
+    output="screen"
     if="$(arg use_base)">
   </node>
 
