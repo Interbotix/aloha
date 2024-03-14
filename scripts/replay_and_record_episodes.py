@@ -1,22 +1,35 @@
-import os
-import h5py
-import numpy as np
-from robot_utils import move_grippers, calibrate_linear_vel, smooth_base_action, postprocess_base_action
+#!/usr/bin/env python3
+
 import argparse
-import matplotlib.pyplot as plt
-from real_env import make_real_env
-from constants import JOINT_NAMES, PUPPET_GRIPPER_JOINT_OPEN, fps
+import os
 import time
 
+from aloha.constants import (
+    FOLLOWER_GRIPPER_JOINT_OPEN,
+    FPS,
+    JOINT_NAMES,
+)
+from aloha.real_env import make_real_env
+from aloha.robot_utils import (
+    # calibrate_linear_vel,
+    move_grippers,
+    # postprocess_base_action,
+    # smooth_base_action,
+)
+import h5py
 import IPython
+import matplotlib.pyplot as plt
+import numpy as np
+
 e = IPython.embed
 
-STATE_NAMES = JOINT_NAMES + ["gripper", 'left_finger', 'right_finger']
+STATE_NAMES = JOINT_NAMES + ['gripper', 'left_finger', 'right_finger']
 
-def store_new_dataset(input_dataset_path, output_dataset_path, obs_wheels, obs_tracer):
+
+def store_new_dataset(input_dataset_path, output_dataset_path, obs_wheels, obs_base):
     # Check if output path exists
     if os.path.exists(output_dataset_path):
-        print(f"The file {output_dataset_path} already exists. Exiting...")
+        print(f'The file {output_dataset_path} already exists. Exiting...')
         return
 
     # Load the uncompressed dataset
@@ -33,12 +46,12 @@ def store_new_dataset(input_dataset_path, output_dataset_path, obs_wheels, obs_t
 
             max_timesteps = infile['action'].shape[0]
             _ = outfile.create_dataset('obs_wheels', (max_timesteps, 2))
-            _ = outfile.create_dataset('obs_tracer', (max_timesteps, 2))
+            _ = outfile.create_dataset('obs_base', (max_timesteps, 2))
 
             outfile['obs_wheels'][()] = obs_wheels
-            outfile['obs_tracer'][()] = obs_tracer
+            outfile['obs_base'][()] = obs_base
 
-    print(f"Replayed dataset saved to {output_dataset_path}")
+    print(f"Replayed dataset saved to '{output_dataset_path}'")
 
 
 def main(args):
@@ -60,44 +73,58 @@ def main(args):
     env.reset()
     # base_actions = smooth_base_action(base_actions)
     obs_wheels = []
-    obs_tracer = []
+    obs_base = []
 
     offset = 0
     scale = 1
     apply_actions = actions
     apply_base_actions = base_actions[offset:] * scale
 
-    DT = 1 / fps
+    DT = 1 / FPS
     for action, base_action in zip(apply_actions, apply_base_actions):
         time1 = time.time()
         # base_action = calibrate_linear_vel(base_action, c=0.19)
         # base_action = postprocess_base_action(base_action)
-        ts = env.step(action, base_action, get_tracer_vel=True)
+        ts = env.step(action, base_action, get_base_vel=True)
         obs_wheels.append(ts.observation['base_vel'])
-        obs_tracer.append(ts.observation['tracer_vel'])
+        obs_base.append(ts.observation['base_vel'])
         time.sleep(max(0, DT - (time.time() - time1)))
     obs_wheels = np.array(obs_wheels)
-    obs_tracer = np.array(obs_tracer)
+    obs_base = np.array(obs_base)
 
-    store_new_dataset(dataset_path, dataset_new_path, obs_wheels, obs_tracer)
+    store_new_dataset(dataset_path, dataset_new_path, obs_wheels, obs_base)
 
     plt.plot(base_actions[:, 0], label='action_linear')
     plt.plot(base_actions[:, 1], label='action_angular')
     plt.plot(obs_wheels[:, 0], '--', label='obs_wheels_linear')
     plt.plot(obs_wheels[:, 1], '--', label='obs_wheels_angular')
-    plt.plot(obs_tracer[:, 0], '-.', label='obs_tracer_linear')
-    plt.plot(obs_tracer[:, 1], '-.', label='obs_tracer_angular')
+    plt.plot(obs_base[:, 0], '-.', label='obs_base_linear')
+    plt.plot(obs_base[:, 1], '-.', label='obs_base_angular')
     plt.legend()
     plt.savefig('replay_and_record_episodes_vel_debug.png', dpi=300)
-    
 
-    move_grippers([env.puppet_bot_left, env.puppet_bot_right], [PUPPET_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)  # open
+    # open
+    move_grippers(
+        [env.follower_bot_left, env.follower_bot_right],
+        [FOLLOWER_GRIPPER_JOINT_OPEN] * 2,
+        move_time=0.5,
+    )
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_dir', action='store', type=str, help='Dataset dir.', required=True)
-    parser.add_argument('--episode_idx', action='store', type=int, help='Episode index.', required=False)
+    parser.add_argument(
+        '--dataset_dir',
+        action='store',
+        type=str,
+        help='Dataset dir.',
+        required=True
+    )
+    parser.add_argument(
+        '--episode_idx',
+        action='store',
+        type=int,
+        help='Episode index.',
+        required=False
+    )
     main(vars(parser.parse_args()))
-
-

@@ -1,41 +1,27 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(aloha)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+find_package(catkin REQUIRED COMPONENTS)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  interbotix_xs_msgs
-  interbotix_xsarm_control
-  rosbag
-  roscpp
-  tf2_ros
-  rviz
-  sensor_msgs
-  std_msgs
-  std_srvs
+catkin_python_setup()
+
+install(
+  PROGRAMS
+    scripts/auto_record.sh
+  DESTINATION
+    ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts
 )
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-catkin_package(
- CATKIN_DEPENDS interbotix_xs_msgs interbotix_xsarm_control rosbag roscpp tf2_ros rviz sensor_msgs std_msgs std_srvs
+catkin_package()
+
+catkin_install_python(
+  PROGRAMS
+    scripts/dual_side_teleop.py
+    scripts/get_episode_len.py
+    scripts/one_side_teleop.py
+    scripts/record_episodes.py
+    scripts/replay_and_record_episodes.py
+    scripts/replay_episodes.py
+    scripts/sleep.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-)
-
-

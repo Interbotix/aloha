@@ -95,7 +95,7 @@ Step 3: Setup 3 cameras
 - If successful, you should be able to find ``{CAM_RIGHT_WRIST, CAM_LEFT_WRIST, CAM_HIGH}`` in your ``/dev``
 
 
-Step 4: Setup the AgileX Tracer base
+Step 4: Setup the Slate base
 - Connect the base to the computer via the stock CANBUS-to-USB cable, and power on.
 - Install SDK from AgileX
     ```

@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 if [ "$2" -lt 0 ]; then
   echo "# of episodes not valid"
   exit

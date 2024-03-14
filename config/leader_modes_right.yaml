@@ -1,4 +1,4 @@
-port: /dev/ttyDXL_master_left
+port: /dev/ttyDXL_leader_right
 
 groups:
   arm:

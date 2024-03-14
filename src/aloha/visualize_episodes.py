@@ -1,18 +1,19 @@
+import argparse
 import os
-import numpy as np
+
+from aloha.constants import DT
 import cv2
 import h5py
-import argparse
-
-import matplotlib.pyplot as plt
-from constants import DT
-
 import IPython
+import matplotlib.pyplot as plt
+import numpy as np
+
 e = IPython.embed
 
-JOINT_NAMES = ["waist", "shoulder", "elbow", "forearm_roll", "wrist_angle", "wrist_rotate"]
-STATE_NAMES = JOINT_NAMES + ["gripper"]
-BASE_STATE_NAMES = ["linear_vel", "angular_vel"]
+JOINT_NAMES = ['waist', 'shoulder', 'elbow', 'forearm_roll', 'wrist_angle', 'wrist_rotate']
+STATE_NAMES = JOINT_NAMES + ['gripper']
+BASE_STATE_NAMES = ['linear_vel', 'angular_vel']
+
 
 def load_hdf5(dataset_dir, dataset_name):
     dataset_path = os.path.join(dataset_dir, dataset_name + '.hdf5')
@@ -21,7 +22,7 @@ def load_hdf5(dataset_dir, dataset_name):
         exit()
 
     with h5py.File(dataset_path, 'r') as root:
-        is_sim = root.attrs['sim']
+        # is_sim = root.attrs['sim']
         compressed = root.attrs.get('compress', False)
         qpos = root['/observations/qpos'][()]
         qvel = root['/observations/qvel'][()]
@@ -31,26 +32,28 @@ def load_hdf5(dataset_dir, dataset_name):
             effort = None
         action = root['/action'][()]
         base_action = root['/base_action'][()]
-        image_dict = dict()
+        image_dict = {}
         for cam_name in root[f'/observations/images/'].keys():
             image_dict[cam_name] = root[f'/observations/images/{cam_name}'][()]
-        if compressed:
-            compress_len = root['/compress_len'][()]
+        # if compressed:
+        #     compress_len = root['/compress_len'][()]
 
     if compressed:
         for cam_id, cam_name in enumerate(image_dict.keys()):
             # un-pad and uncompress
             padded_compressed_image_list = image_dict[cam_name]
             image_list = []
-            for frame_id, padded_compressed_image in enumerate(padded_compressed_image_list): # [:1000] to save memory
-                image_len = int(compress_len[cam_id, frame_id])
+
+            # [:1000] to save memory
+            for frame_id, padded_compressed_image in enumerate(padded_compressed_image_list):
+                # image_len = int(compress_len[cam_id, frame_id])
                 compressed_image = padded_compressed_image
                 image = cv2.imdecode(compressed_image, 1)
                 image_list.append(image)
             image_dict[cam_name] = image_list
 
-
     return qpos, qvel, effort, action, base_action, image_dict
+
 
 def main(args):
     dataset_dir = args['dataset_dir']
@@ -62,12 +65,31 @@ def main(args):
         dataset_name = f'episode_{episode_idx}'
 
     qpos, qvel, effort, action, base_action, image_dict = load_hdf5(dataset_dir, dataset_name)
-    print('hdf5 loaded!!')
-    save_videos(image_dict, DT, video_path=os.path.join(dataset_dir, dataset_name + '_video.mp4'))
-    visualize_joints(qpos, action, plot_path=os.path.join(dataset_dir, dataset_name + '_qpos.png'))
-    # visualize_single(effort, 'effort', plot_path=os.path.join(dataset_dir, dataset_name + '_effort.png'))
-    # visualize_single(action - qpos, 'tracking_error', plot_path=os.path.join(dataset_dir, dataset_name + '_error.png'))
-    visualize_base(base_action, plot_path=os.path.join(dataset_dir, dataset_name + '_base_action.png'))
+    print('hdf5 loaded!')
+    save_videos(
+        image_dict,
+        DT,
+        video_path=os.path.join(dataset_dir, dataset_name + '_video.mp4')
+    )
+    visualize_joints(
+        qpos,
+        action,
+        plot_path=os.path.join(dataset_dir, dataset_name + '_qpos.png')
+    )
+    # visualize_single(
+    #     effort,
+    #     'effort',
+    #     plot_path=os.path.join(dataset_dir, dataset_name + '_effort.png')
+    # )
+    # visualize_single(
+    #     action - qpos,
+    #     'tracking_error',
+    #     plot_path=os.path.join(dataset_dir, dataset_name + '_error.png')
+    # )
+    visualize_base(
+        base_action,
+        plot_path=os.path.join(dataset_dir, dataset_name + '_base_action.png')
+    )
     # visualize_timestamp(t_list, dataset_path) # TODO addn timestamp back
 
 
@@ -82,7 +104,7 @@ def save_videos(video, dt, video_path=None):
             images = []
             for cam_name in cam_names:
                 image = image_dict[cam_name]
-                image = image[:, :, [2, 1, 0]] # swap B and R channel
+                image = image[:, :, [2, 1, 0]]  # swap B and R channel
                 images.append(image)
             images = np.concatenate(images, axis=1)
             out.write(images)
@@ -93,7 +115,7 @@ def save_videos(video, dt, video_path=None):
         all_cam_videos = []
         for cam_name in cam_names:
             all_cam_videos.append(video[cam_name])
-        all_cam_videos = np.concatenate(all_cam_videos, axis=2) # width dimension
+        all_cam_videos = np.concatenate(all_cam_videos, axis=2)  # width dimension
 
         n_frames, h, w, _ = all_cam_videos.shape
         fps = int(1 / dt)
@@ -112,15 +134,17 @@ def visualize_joints(qpos_list, command_list, plot_path=None, ylim=None, label_o
     else:
         label1, label2 = 'State', 'Command'
 
-    qpos = np.array(qpos_list) # ts, dim
+    qpos = np.array(qpos_list)  # ts, dim
     command = np.array(command_list)
     num_ts, num_dim = qpos.shape
-    h, w = 2, num_dim
+    # h, w = 2, num_dim
     num_figs = num_dim
     fig, axs = plt.subplots(num_figs, 1, figsize=(8, 2 * num_dim))
 
     # plot joint state
-    all_names = [name + '_left' for name in STATE_NAMES] + [name + '_right' for name in STATE_NAMES]
+    all_names = (
+        [f'{name}_left' for name in STATE_NAMES] + [f'{name}_right' for name in STATE_NAMES]
+    )
     for dim_idx in range(num_dim):
         ax = axs[dim_idx]
         ax.plot(qpos[:, dim_idx], label=label1)
@@ -143,15 +167,18 @@ def visualize_joints(qpos_list, command_list, plot_path=None, ylim=None, label_o
     print(f'Saved qpos plot to: {plot_path}')
     plt.close()
 
+
 def visualize_single(efforts_list, label, plot_path=None, ylim=None, label_overwrite=None):
-    efforts = np.array(efforts_list) # ts, dim
+    efforts = np.array(efforts_list)  # ts, dim
     num_ts, num_dim = efforts.shape
     h, w = 2, num_dim
     num_figs = num_dim
     fig, axs = plt.subplots(num_figs, 1, figsize=(w, h * num_figs))
 
     # plot joint state
-    all_names = [name + '_left' for name in STATE_NAMES] + [name + '_right' for name in STATE_NAMES]
+    all_names = (
+        [name + '_left' for name in STATE_NAMES] + [name + '_right' for name in STATE_NAMES]
+    )
     for dim_idx in range(num_dim):
         ax = axs[dim_idx]
         ax.plot(efforts[:, dim_idx], label=label)
@@ -168,8 +195,9 @@ def visualize_single(efforts_list, label, plot_path=None, ylim=None, label_overw
     print(f'Saved effort plot to: {plot_path}')
     plt.close()
 
+
 def visualize_base(readings, plot_path=None):
-    readings = np.array(readings) # ts, dim
+    readings = np.array(readings)  # ts, dim
     num_ts, num_dim = readings.shape
     num_figs = num_dim
     fig, axs = plt.subplots(num_figs, 1, figsize=(8, 2 * num_dim))
@@ -179,9 +207,15 @@ def visualize_base(readings, plot_path=None):
     for dim_idx in range(num_dim):
         ax = axs[dim_idx]
         ax.plot(readings[:, dim_idx], label='raw')
-        ax.plot(np.convolve(readings[:, dim_idx], np.ones(20)/20, mode='same'), label='smoothed_20')
-        ax.plot(np.convolve(readings[:, dim_idx], np.ones(10)/10, mode='same'), label='smoothed_10')
-        ax.plot(np.convolve(readings[:, dim_idx], np.ones(5)/5, mode='same'), label='smoothed_5')
+        ax.plot(
+            np.convolve(readings[:, dim_idx], np.ones(20)/20, mode='same'), label='smoothed_20'
+        )
+        ax.plot(
+            np.convolve(readings[:, dim_idx], np.ones(10)/10, mode='same'), label='smoothed_10'
+        )
+        ax.plot(
+            np.convolve(readings[:, dim_idx], np.ones(5)/5, mode='same'), label='smoothed_5'
+        )
         ax.set_title(f'Joint {dim_idx}: {all_names[dim_idx]}')
         ax.legend()
 
@@ -223,9 +257,22 @@ def visualize_timestamp(t_list, dataset_path):
     print(f'Saved timestamp plot to: {plot_path}')
     plt.close()
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_dir', action='store', type=str, help='Dataset dir.', required=True)
-    parser.add_argument('--episode_idx', action='store', type=int, help='Episode index.', required=False)
+    parser.add_argument(
+        '--dataset_dir',
+        action='store',
+        type=str,
+        help='Dataset dir.',
+        required=True,
+    )
+    parser.add_argument(
+        '--episode_idx',
+        action='store',
+        type=int,
+        help='Episode index.',
+        required=False,
+    )
     parser.add_argument('--ismirror', action='store_true')
     main(vars(parser.parse_args()))

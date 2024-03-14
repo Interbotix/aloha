@@ -1,4 +1,4 @@
-port: /dev/ttyDXL_puppet_left
+port: /dev/ttyDXL_follower_left
 
 groups:
   arm:
