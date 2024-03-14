@@ -1,0 +1,16 @@
+dm_control
+dm-env
+einops
+h5py
+matplotlib
+mujoco
+opencv-python
+packaging
+pexpect
+pyquaternion
+pyyaml
+rospkg
+torch
+torchvision
+tqdm
+wandb
