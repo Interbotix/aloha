@@ -21,8 +21,8 @@ from aloha.robot_utils import (
     setup_leader_bot,
 )
 import dm_env
-from interbotix_xs_modules.arm import InterbotixManipulatorXS
-from interbotix_xs_modules.slate import InterbotixSlateXS
+from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
+from interbotix_xs_modules.xs_robot.slate import InterbotixSlate
 from interbotix_xs_msgs.msg import JointSingleCommand
 import IPython
 import matplotlib.pyplot as plt
@@ -103,7 +103,7 @@ class RealEnv:
         self.gripper_command = JointSingleCommand(name='gripper')
 
     def setup_base(self):
-        self.base = InterbotixSlateXS('aloha', init_node=False)
+        self.base = InterbotixSlate('aloha', init_node=False)
         self.base.base.set_motor_torque(False)
 
     def setup_robots(self):
@@ -208,8 +208,8 @@ class RealEnv:
     def reset(self, fake=False):
         if not fake:
             # Reboot follower robot gripper motors
-            self.follower_bot_left.dxl.robot_reboot_motors('single', 'gripper', True)
-            self.follower_bot_right.dxl.robot_reboot_motors('single', 'gripper', True)
+            self.follower_bot_left.core.robot_reboot_motors('single', 'gripper', True)
+            self.follower_bot_right.core.robot_reboot_motors('single', 'gripper', True)
             self._reset_joints()
             self._reset_gripper()
         return dm_env.TimeStep(
@@ -250,11 +250,11 @@ def get_action(
 ):
     action = np.zeros(14)  # 6 joint + 1 gripper, for two arms
     # Arm actions
-    action[:6] = leader_bot_left.dxl.joint_states.position[:6]
-    action[7:7+6] = leader_bot_right.dxl.joint_states.position[:6]
+    action[:6] = leader_bot_left.core.joint_states.position[:6]
+    action[7:7+6] = leader_bot_right.core.joint_states.position[:6]
     # Gripper actions
-    action[6] = LEADER_GRIPPER_JOINT_NORMALIZE_FN(leader_bot_left.dxl.joint_states.position[6])
-    action[7+6] = LEADER_GRIPPER_JOINT_NORMALIZE_FN(leader_bot_right.dxl.joint_states.position[6])
+    action[6] = LEADER_GRIPPER_JOINT_NORMALIZE_FN(leader_bot_left.core.joint_states.position[6])
+    action[7+6] = LEADER_GRIPPER_JOINT_NORMALIZE_FN(leader_bot_right.core.joint_states.position[6])
 
     return action
 

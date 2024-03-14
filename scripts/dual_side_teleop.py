@@ -17,9 +17,9 @@ from aloha.robot_utils import (
     torque_off,
     torque_on,
 )
-from interbotix_xs_modules.arm import InterbotixManipulatorXS
+from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
-import rospy
+import rclpy
 
 
 def opening_ceremony(
@@ -30,21 +30,21 @@ def opening_ceremony(
 ) -> None:
     """Move all 4 robots to a pose where it is easy to start demonstration."""
     # reboot gripper motors, and set operating modes for all motors
-    follower_bot_left.dxl.robot_reboot_motors('single', 'gripper', True)
-    follower_bot_left.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    follower_bot_left.dxl.robot_set_operating_modes('single', 'gripper', 'current_based_position')
-    leader_bot_left.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    leader_bot_left.dxl.robot_set_operating_modes('single', 'gripper', 'position')
-    follower_bot_left.dxl.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
+    follower_bot_left.core.robot_reboot_motors('single', 'gripper', True)
+    follower_bot_left.core.robot_set_operating_modes('group', 'arm', 'position')
+    follower_bot_left.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+    leader_bot_left.core.robot_set_operating_modes('group', 'arm', 'position')
+    leader_bot_left.core.robot_set_operating_modes('single', 'gripper', 'position')
+    follower_bot_left.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
 
-    follower_bot_right.dxl.robot_reboot_motors('single', 'gripper', True)
-    follower_bot_right.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    follower_bot_right.dxl.robot_set_operating_modes(
+    follower_bot_right.core.robot_reboot_motors('single', 'gripper', True)
+    follower_bot_right.core.robot_set_operating_modes('group', 'arm', 'position')
+    follower_bot_right.core.robot_set_operating_modes(
         'single', 'gripper', 'current_based_position'
     )
-    leader_bot_right.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    leader_bot_right.dxl.robot_set_operating_modes('single', 'gripper', 'position')
-    follower_bot_left.dxl.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
+    leader_bot_right.core.robot_set_operating_modes('group', 'arm', 'position')
+    leader_bot_right.core.robot_set_operating_modes('single', 'gripper', 'position')
+    follower_bot_left.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
 
     torque_on(follower_bot_left)
     torque_on(leader_bot_left)
@@ -72,11 +72,11 @@ def press_to_start(
 ) -> None:
     # press gripper to start teleop
     # disable torque for only gripper joint of leader robot to allow user movement
-    leader_bot_left.dxl.robot_torque_enable('single', 'gripper', False)
-    leader_bot_right.dxl.robot_torque_enable('single', 'gripper', False)
+    leader_bot_left.core.robot_torque_enable('single', 'gripper', False)
+    leader_bot_right.core.robot_torque_enable('single', 'gripper', False)
     print('Close the gripper to start')
     pressed = False
-    while not rospy.is_shutdown() and not pressed:
+    while rclpy.ok() and not pressed:
         gripper_pos_left = get_arm_gripper_positions(leader_bot_left)
         gripper_pos_right = get_arm_gripper_positions(leader_bot_right)
         pressed = (
@@ -130,18 +130,18 @@ def main() -> None:
     # Teleoperation loop
     gripper_left_command = JointSingleCommand(name='gripper')
     gripper_right_command = JointSingleCommand(name='gripper')
-    while not rospy.is_shutdown():
+    while rclpy.ok():
         # sync joint positions
-        leader_left_state_joints = leader_bot_left.dxl.joint_states.position[:6]
-        leader_right_state_joints = leader_bot_right.dxl.joint_states.position[:6]
+        leader_left_state_joints = leader_bot_left.core.joint_states.position[:6]
+        leader_right_state_joints = leader_bot_right.core.joint_states.position[:6]
         follower_bot_left.arm.set_joint_positions(leader_left_state_joints, blocking=False)
         follower_bot_right.arm.set_joint_positions(leader_right_state_joints, blocking=False)
         # sync gripper positions
         gripper_left_command.cmd = LEADER2FOLLOWER_JOINT_FN(
-            leader_bot_left.dxl.joint_states.position[6]
+            leader_bot_left.core.joint_states.position[6]
         )
         gripper_right_command.cmd = LEADER2FOLLOWER_JOINT_FN(
-            leader_bot_right.dxl.joint_states.position[6]
+            leader_bot_right.core.joint_states.position[6]
         )
         follower_bot_left.gripper.core.pub_single.publish(gripper_left_command)
         follower_bot_right.gripper.core.pub_single.publish(gripper_right_command)

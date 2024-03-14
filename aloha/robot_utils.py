@@ -8,11 +8,11 @@ from aloha.constants import (
     IS_MOBILE,
 )
 from cv_bridge import CvBridge
-from interbotix_xs_modules.arm import InterbotixManipulatorXS
+from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointGroupCommand, JointSingleCommand
 import IPython
 import numpy as np
-import rospy
+import rclpy
 from sensor_msgs.msg import Image, JointState
 
 e = IPython.embed
@@ -20,9 +20,11 @@ e = IPython.embed
 
 class ImageRecorder:
     def __init__(
-        self, init_node: bool = True,
+        self,
+        # init_node: bool = True,
         is_mobile: bool = IS_MOBILE,
-        is_debug: bool = False
+        is_debug: bool = False,
+        node: rclpy.Node = None,
     ):
         self.is_debug = is_debug
         self.bridge = CvBridge()
@@ -32,8 +34,8 @@ class ImageRecorder:
         else:
             self.camera_names = ['cam_high', 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
 
-        if init_node:
-            rospy.init_node('image_recorder', anonymous=True)
+        # if init_node:
+        #     rospy.init_node('image_recorder', anonymous=True)
         for cam_name in self.camera_names:
             setattr(self, f'{cam_name}_image', None)
             setattr(self, f'{cam_name}_secs', None)
@@ -49,7 +51,7 @@ class ImageRecorder:
             else:
                 raise NotImplementedError
             topic = COLOR_IMAGE_TOPIC_NAME.format(cam_name)
-            rospy.Subscriber(topic, Image, callback_func)
+            node.create_subscription(Image, topic, callback_func)
             if self.is_debug:
                 setattr(self, f'{cam_name}_timestamps', deque(maxlen=50))
         time.sleep(0.5)
@@ -105,8 +107,9 @@ class Recorder:
     def __init__(
         self,
         side: str,
-        init_node: bool = True,
+        # init_node: bool = True,
         is_debug: bool = False,
+        node: rclpy.Node = None,
     ):
         self.secs = None
         self.nsecs = None
@@ -116,21 +119,21 @@ class Recorder:
         self.gripper_command = None
         self.is_debug = is_debug
 
-        if init_node:
-            rospy.init_node('recorder', anonymous=True)
-        rospy.Subscriber(
-            f'/follower_{side}/joint_states',
+        # if init_node:
+        #     rospy.init_node('recorder', anonymous=True)
+        node.create_subscription(
             JointState,
+            f'/follower_{side}/joint_states',
             self.follower_state_cb
         )
-        rospy.Subscriber(
-            f'/follower_{side}/commands/joint_group',
+        node.create_subscription(
             JointGroupCommand,
+            f'/follower_{side}/commands/joint_group',
             self.follower_arm_commands_cb
         )
-        rospy.Subscriber(
-            f'/follower_{side}/commands/joint_single',
+        node.create_subscription(
             JointSingleCommand,
+            f'/follower_{side}/commands/joint_single',
             self.follower_gripper_commands_cb
         )
         if self.is_debug:
@@ -216,36 +219,36 @@ def move_grippers(
 
 
 def setup_follower_bot(bot: InterbotixManipulatorXS):
-    bot.dxl.robot_reboot_motors('single', 'gripper', True)
-    bot.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    bot.dxl.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+    bot.core.robot_reboot_motors('single', 'gripper', True)
+    bot.core.robot_set_operating_modes('group', 'arm', 'position')
+    bot.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
     torque_on(bot)
 
 
 def setup_leader_bot(bot: InterbotixManipulatorXS):
-    bot.dxl.robot_set_operating_modes('group', 'arm', 'pwm')
-    bot.dxl.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+    bot.core.robot_set_operating_modes('group', 'arm', 'pwm')
+    bot.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
     torque_off(bot)
 
 
 def set_standard_pid_gains(bot: InterbotixManipulatorXS):
-    bot.dxl.robot_set_motor_registers('group', 'arm', 'Position_P_Gain', 800)
-    bot.dxl.robot_set_motor_registers('group', 'arm', 'Position_I_Gain', 0)
+    bot.core.robot_set_motor_registers('group', 'arm', 'Position_P_Gain', 800)
+    bot.core.robot_set_motor_registers('group', 'arm', 'Position_I_Gain', 0)
 
 
 def set_low_pid_gains(bot: InterbotixManipulatorXS):
-    bot.dxl.robot_set_motor_registers('group', 'arm', 'Position_P_Gain', 100)
-    bot.dxl.robot_set_motor_registers('group', 'arm', 'Position_I_Gain', 0)
+    bot.core.robot_set_motor_registers('group', 'arm', 'Position_P_Gain', 100)
+    bot.core.robot_set_motor_registers('group', 'arm', 'Position_I_Gain', 0)
 
 
 def torque_off(bot: InterbotixManipulatorXS):
-    bot.dxl.robot_torque_enable('group', 'arm', False)
-    bot.dxl.robot_torque_enable('single', 'gripper', False)
+    bot.core.robot_torque_enable('group', 'arm', False)
+    bot.core.robot_torque_enable('single', 'gripper', False)
 
 
 def torque_on(bot: InterbotixManipulatorXS):
-    bot.dxl.robot_torque_enable('group', 'arm', True)
-    bot.dxl.robot_torque_enable('single', 'gripper', True)
+    bot.core.robot_torque_enable('group', 'arm', True)
+    bot.core.robot_torque_enable('single', 'gripper', True)
 
 
 def calibrate_linear_vel(base_action, c=None):

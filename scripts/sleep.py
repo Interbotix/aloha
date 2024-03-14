@@ -6,7 +6,7 @@ from aloha.robot_utils import (
     move_arms,
     torque_on
 )
-from interbotix_xs_modules.arm import InterbotixManipulatorXS
+from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 
 
 def main():

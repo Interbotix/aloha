@@ -32,10 +32,10 @@ from aloha.robot_utils import (
 import cv2
 import h5py
 # import h5py_cache
-from interbotix_xs_modules.arm import InterbotixManipulatorXS
+from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 import IPython
 import numpy as np
-import rospy
+import rclpy
 from tqdm import tqdm
 
 
@@ -50,19 +50,19 @@ def opening_ceremony(
 ):
     """Move all 4 robots to a pose where it is easy to start demonstration."""
     # reboot gripper motors, and set operating modes for all motors
-    follower_bot_left.dxl.robot_reboot_motors('single', 'gripper', True)
-    follower_bot_left.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    follower_bot_left.dxl.robot_set_operating_modes('single', 'gripper', 'current_based_position')
-    leader_bot_left.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    leader_bot_left.dxl.robot_set_operating_modes('single', 'gripper', 'position')
-    follower_bot_left.dxl.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
+    follower_bot_left.core.robot_reboot_motors('single', 'gripper', True)
+    follower_bot_left.core.robot_set_operating_modes('group', 'arm', 'position')
+    follower_bot_left.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+    leader_bot_left.core.robot_set_operating_modes('group', 'arm', 'position')
+    leader_bot_left.core.robot_set_operating_modes('single', 'gripper', 'position')
+    follower_bot_left.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
 
-    follower_bot_right.dxl.robot_reboot_motors('single', 'gripper', True)
-    follower_bot_right.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    follower_bot_right.dxl.robot_set_operating_modes('single', 'gripper', 'current_based_position')
-    leader_bot_right.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    leader_bot_right.dxl.robot_set_operating_modes('single', 'gripper', 'position')
-    follower_bot_left.dxl.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
+    follower_bot_right.core.robot_reboot_motors('single', 'gripper', True)
+    follower_bot_right.core.robot_set_operating_modes('group', 'arm', 'position')
+    follower_bot_right.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+    leader_bot_right.core.robot_set_operating_modes('group', 'arm', 'position')
+    leader_bot_right.core.robot_set_operating_modes('single', 'gripper', 'position')
+    follower_bot_left.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
 
     torque_on(follower_bot_left)
     torque_on(leader_bot_left)
@@ -85,11 +85,11 @@ def opening_ceremony(
 
     # press gripper to start data collection
     # disable torque for only gripper joint of leader robot to allow user movement
-    leader_bot_left.dxl.robot_torque_enable('single', 'gripper', False)
-    leader_bot_right.dxl.robot_torque_enable('single', 'gripper', False)
+    leader_bot_left.core.robot_torque_enable('single', 'gripper', False)
+    leader_bot_right.core.robot_torque_enable('single', 'gripper', False)
     print('Close the gripper to start')
     pressed = False
-    while not rospy.is_shutdown() and not pressed:
+    while rclpy.ok() and not pressed:
         gripper_pos_left = get_arm_gripper_positions(leader_bot_left)
         gripper_pos_right = get_arm_gripper_positions(leader_bot_right)
         pressed = (
@@ -163,8 +163,8 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
     torque_on(leader_bot_left)
     torque_on(leader_bot_right)
     # Open follower grippers
-    env.follower_bot_left.dxl.robot_set_operating_modes('single', 'gripper', 'position')
-    env.follower_bot_right.dxl.robot_set_operating_modes('single', 'gripper', 'position')
+    env.follower_bot_left.core.robot_set_operating_modes('single', 'gripper', 'position')
+    env.follower_bot_right.core.robot_set_operating_modes('single', 'gripper', 'position')
     move_grippers(
         [env.follower_bot_left, env.follower_bot_right],
         [FOLLOWER_GRIPPER_JOINT_OPEN] * 2,
@@ -297,7 +297,7 @@ def main(args):
 
     dataset_name = f'episode_{episode_idx}'
     print(dataset_name + '\n')
-    while not rospy.is_shutdown():
+    while rclpy.ok():
         is_healthy = capture_one_episode(
             DT,
             max_timesteps,

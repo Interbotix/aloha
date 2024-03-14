@@ -18,22 +18,22 @@ from aloha.robot_utils import (
     torque_off,
     torque_on,
 )
-from interbotix_xs_modules.arm import InterbotixManipulatorXS
+from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
 import IPython
-import rospy
+import rclpy
 
 e = IPython.embed
 
 
 def prep_robots(leader_bot: InterbotixManipulatorXS, follower_bot: InterbotixManipulatorXS):
     # reboot gripper motors, and set operating modes for all motors
-    follower_bot.dxl.robot_reboot_motors('single', 'gripper', True)
-    follower_bot.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    follower_bot.dxl.robot_set_operating_modes('single', 'gripper', 'current_based_position')
-    leader_bot.dxl.robot_set_operating_modes('group', 'arm', 'position')
-    leader_bot.dxl.robot_set_operating_modes('single', 'gripper', 'position')
-    follower_bot.dxl.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
+    follower_bot.core.robot_reboot_motors('single', 'gripper', True)
+    follower_bot.core.robot_set_operating_modes('group', 'arm', 'position')
+    follower_bot.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+    leader_bot.core.robot_set_operating_modes('group', 'arm', 'position')
+    leader_bot.core.robot_set_operating_modes('single', 'gripper', 'position')
+    follower_bot.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
     torque_on(follower_bot)
     torque_on(leader_bot)
 
@@ -51,10 +51,10 @@ def prep_robots(leader_bot: InterbotixManipulatorXS, follower_bot: InterbotixMan
 def press_to_start(leader_bot: InterbotixManipulatorXS):
     # press gripper to start data collection
     # disable torque for only gripper joint of leader robot to allow user movement
-    leader_bot.dxl.robot_torque_enable('single', 'gripper', False)
+    leader_bot.core.robot_torque_enable('single', 'gripper', False)
     print('Close the gripper to start')
     pressed = False
-    while not rospy.is_shutdown() and not pressed:
+    while rclpy.ok() and not pressed:
         gripper_pos = get_arm_gripper_positions(leader_bot)
         if gripper_pos < LEADER_GRIPPER_CLOSE_THRESH:
             pressed = True
@@ -84,12 +84,12 @@ def main(robot_side: str):
 
     # Teleoperation loop
     gripper_command = JointSingleCommand(name='gripper')
-    while not rospy.is_shutdown():
+    while rclpy.ok():
         # sync joint positions
-        leader_state_joints = leader_bot.dxl.joint_states.position[:6]
+        leader_state_joints = leader_bot.core.joint_states.position[:6]
         follower_bot.arm.set_joint_positions(leader_state_joints, blocking=False)
         # sync gripper positions
-        leader_gripper_joint = leader_bot.dxl.joint_states.position[6]
+        leader_gripper_joint = leader_bot.core.joint_states.position[6]
         follower_gripper_joint_target = LEADER2FOLLOWER_JOINT_FN(leader_gripper_joint)
         gripper_command.cmd = follower_gripper_joint_target
         follower_bot.gripper.core.pub_single.publish(gripper_command)
