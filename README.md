@@ -1,6 +1,5 @@
 # Mobile ALOHA: Learning Bimanual Mobile Manipulation with Low-Cost Whole-Body Teleoperation
 
-
 #### Project Website: https://mobile-aloha.github.io/
 
 This codebase is forked from the [ALOHA repo](https://github.com/tonyzhaozh/aloha), and contains implementation for teleoperation and data collection with the Mobile ALOHA hardware.
@@ -8,15 +7,16 @@ To build ALOHA, follow the [Hardware Assembly Tutorial](https://docs.google.com/
 To train imitation learning algorithms, you would also need to install [ACT for Mobile ALOHA](https://github.com/MarkFzp/act-plus-plus) which is forked from [ACT](https://github.com/tonyzhaozh/act).
 
 ### Repo Structure
-- ``config``: a config for each robot, designating the port they should bind to, more details in quick start guide.
-- ``launch``: a ROS launch file for all 4 cameras and all 4 robots.
-- ``aloha_scripts``: python code for teleop and data collection
+- [``config``](./config/): a config for each robot, designating the port they should bind to, more details in quick start guide.
+- [``launch``](./launch): a ROS launch file for all 4 cameras and all 4 robots.
+- [``scripts``](./scripts/): Python scripts for teleop and data collection
+- [``src``](./src/): Python modules for teleop and data collection
 
 ## Quick start guide
 
 ### Software selection -- OS:
 
-Currently tested and working configurations: 
+Currently tested and working configurations:
 - :white_check_mark: Ubuntu 18.04 + ROS 1 noetic
 - :white_check_mark: Ubuntu 20.04 + ROS 1 noetic
 
@@ -46,40 +46,39 @@ things such as rebooting the motor (very useful!), torque on/off, and sending co
 However, it has no knowledge about the kinematics of the robot, so be careful about collisions.
 The robot *will* collapse if motors are torque off i.e. there is no automatically engaged brakes in joints.
 - Open Dynamixel wizard, go into ``options`` and select:
-  - Protocal 2.0
+  - Protocol 2.0
   - All ports
   - 1000000 bps
   - ID range from 0-10
-- Note: repeat above everytime before you scan.
+- Note: repeat above every time before you scan.
 - Then hit ``Scan``. There should be 4 devices showing up, each with 9 motors.
 
 
 - One issue that arises is the port each robot binds to can change over time, e.g. a robot that
 is initially ``ttyUSB0`` might suddenly become ``ttyUSB5``. To resolve this, we bind each robot to a fixed symlink
 port with the following mapping:
-  - ``ttyDXL_master_right``: right master robot (master: the robot that the operator would be holding)
-  - ``ttyDXL_puppet_right``: right puppet robot (puppet: the robot that performs the task)
-  - ``ttyDXL_master_left``: left master robot
-  - ``ttyDXL_puppet_left``: left puppet robot
-- Take ``ttyDXL_master_right``: right master robot as an example:
-  1. Find the port that the right master robot is currently binding to, e.g. ``ttyUSB0``
+  - ``ttyDXL_leader_right``: right leader robot (leader: the robot that the operator would be holding)
+  - ``ttyDXL_follower_right``: right follower robot (follower: the robot that performs the task)
+  - ``ttyDXL_leader_left``: left leader robot
+  - ``ttyDXL_follower_left``: left follower robot
+- Take ``ttyDXL_leader_right``: right leader robot as an example:
+  1. Find the port that the right leader robot is currently binding to, e.g. ``ttyUSB0``
   2. run ``udevadm info --name=/dev/ttyUSB0 --attribute-walk | grep serial`` to obtain the serial number. Use the first one that shows up, the format should look similar to ``FT6S4DSP``.
-  3. ``sudo vim /etc/udev/rules.d/99-fixed-interbotix-udev.rules`` and add the following line: 
+  3. ``sudo vim /etc/udev/rules.d/99-fixed-interbotix-udev.rules`` and add the following line:
 
-         SUBSYSTEM=="tty", ATTRS{serial}=="<serial number here>", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_master_right"
+         SUBSYSTEM=="tty", ATTRS{serial}=="<serial number here>", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_leader_right"
 
-  4. This will make sure the right master robot is *always* binding to ``ttyDXL_master_right``
+  4. This will make sure the right leader robot is *always* binding to ``ttyDXL_leader_right``
   5. Repeat with the rest of 3 arms.
 - To apply the changes, run ``sudo udevadm control --reload && sudo udevadm trigger``
 - If successful, you should be able to find ``ttyDXL*`` in your ``/dev``
 
 Step 2: Set max current for gripper motors
-- Open Dynamixel Wizard, and select the wrist motor for puppet arms. The name of it should be ```[ID:009] XM430-W350```
-- Tip: the LED on the base of robot will flash when it is talking to Dynamixel Wizard. This will help determine which robot is selected. 
+- Open Dynamixel Wizard, and select the wrist motor for follower arms. The name of it should be ```[ID:009] XM430-W350```
+- Tip: the LED on the base of robot will flash when it is talking to Dynamixel Wizard. This will help determine which robot is selected.
 - Find ``38 Current Limit``, enter ``300``, then hit ``save`` at the bottom.
-- Repeat this for both puppet robots.
+- Repeat this for both follower robots.
 - This limits the max current through gripper motors, to prevent overloading errors.
-
 
 Step 3: Setup 3 cameras
 - You may use usb hub here, but *maximum 2 cameras per hub for reasonable latency*.
@@ -95,114 +94,107 @@ Step 3: Setup 3 cameras
 - To apply the changes, run ``sudo udevadm control --reload && sudo udevadm trigger``
 - If successful, you should be able to find ``{CAM_RIGHT_WRIST, CAM_LEFT_WRIST, CAM_HIGH}`` in your ``/dev``
 
-
 Step 4: Setup the Slate base
-- Connect the base to the computer via the stock CANBUS-to-USB cable, and power on.
-- Install SDK from AgileX
-    ```
-    pip3 install pyagxrobots
-    ```
-- Enable gs_usb kernel module
-   ```
-   sudo modprobe gs_usb
-   ```
-- Bring up the CAN device
-   ```
-   sudo ip link set can0 up type can bitrate 500000
-   ```
-- If no error occured in the previous steps, you should be able to see the can device now by using command
-   ```
-   ifconfig -a
-   ```
-- Install and use can-utils to test the hardware
-   ```
-   sudo apt install can-utils
-   ```
-- Testing commands:
-   ```
-   # receiving data from can0
-   candump can0
-   ```
 
 At this point, have a new terminal
-    
-    conda deactivate # if conda shows up by default
-    source /opt/ros/noetic/setup.sh && source ~/interbotix_ws/devel/setup.sh
-    roslaunch aloha 4arms_teleop.launch
 
-If no error message is showing up, the computer should be successfully connected to all 3 cameras, all 4 robot arms and the robot base.
+```shell
+conda deactivate # if conda shows up by default
+source /opt/ros/noetic/setup.sh && source ~/interbotix_ws/devel/setup.sh
+roslaunch aloha 4arms_teleop.launch
+```
+
+If no error message is showing up, the computer should be successfully connected to all 3 cameras, all 4 robot arms, and the robot base.
 
 #### Trouble shooting
-- Make sure Dynamixel Wizard is disconnected, and no app is using webcam's stream. It will prevent ROS from connecting to
-these devices.
 
-### Software installation - Conda:
+- Make sure Dynamixel Wizard is disconnected, and no app is using the camera streams.
+  - These will prevent ROS from connecting to those devices.
 
-    conda create -n aloha python=3.8.10
-    conda activate aloha
-    pip install torchvision
-    pip install torch
-    pip install pyquaternion
-    pip install pyyaml
-    pip install rospkg
-    pip install pexpect
-    pip install mujoco
-    pip install dm_control
-    pip install opencv-python
-    pip install matplotlib
-    pip install einops
-    pip install packaging
-    pip install h5py
-    pip install tqdm
-    pip install wandb
+### Software Installation - Conda:
 
-### Testing teleoperation
+Create and set up the conda environment automatically using the following command:
 
-**Notice**: Before running the commands below, be sure to place all 4 robots in their sleep positions, and open master robot's gripper. 
-All robots will rise to a height that is easy for teleoperation.
+```shell
+conda env create -f environment.yaml
+```
 
-    # ROS terminal
-    conda deactivate
-    source /opt/ros/noetic/setup.sh && source ~/interbotix_ws/devel/setup.sh
-    roslaunch aloha 4arms_teleop.launch
-    
-    # Right hand terminal
-    conda activate aloha
-    cd ~/interbotix_ws/src/aloha/aloha_scripts
-    python3 one_side_teleop.py right
-    
-    # Left hand terminal
-    conda activate aloha
-    cd ~/interbotix_ws/src/aloha/aloha_scripts
-    python3 one_side_teleop.py left
+The conda environment can also be set up manually using the following commands:
 
-The teleoperation will start when the master side gripper is closed.
+```shell
+conda create -n aloha python=3.8.10
+conda activate aloha
+pip install dm_control
+pip install einops
+pip install h5py
+pip install matplotlib
+pip install mujoco
+pip install opencv-python
+pip install packaging
+pip install pexpect
+pip install pyquaternion
+pip install pyyaml
+pip install rospkg
+pip install torch
+pip install torchvision
+pip install tqdm
+pip install wandb
+```
 
+### Testing Teleoperation
+
+> [!NOTE]
+> Before running the commands below, be sure to place all 4 robots in their sleep positions, and open leader robot's gripper.
+> All robots will rise to a height that is easy for teleoperation.
+
+Open two terminals and enter the following:
+
+```shell
+# Terminal 1
+conda deactivate
+source /opt/ros/noetic/setup.sh && source ~/interbotix_ws/devel/setup.sh
+roslaunch aloha 4arms_teleop.launch use_cameras:=false
+
+# Terminal 2
+conda activate aloha
+cd ~/interbotix_ws/src/aloha/scripts
+python3 dual_side_teleop.py
+```
+
+The teleoperation will start when the leader side grippers are closed.
 
 ## Example Usages
 
 To set up a new terminal, run:
+```shell
+conda activate aloha
+cd ~/interbotix_ws/src/aloha/scripts
+```
 
-    conda activate aloha
-    cd ~/interbotix_ws/src/aloha/aloha_scripts
+The ``dual_side_teleop.py`` we ran is for testing teleoperation and has no data collection.
+To collect data for an episode, run:
 
-
-The ``one_side_teleop.py`` we ran is for testing teleoperation and has no data collection. To collect data for an episode, run:
-
-    python3 record_episodes.py --dataset_dir <data save dir> --episode_idx 0
+```shell
+python3 record_episodes.py --dataset_dir <data save dir> --episode_idx 0
+```
 
 This will store a hdf5 file at ``<data save dir>``.
 To change episode length and other params, edit ``constants.py`` directly.
 
 To visualize the episode collected, run:
 
-    python3 visualize_episodes.py --dataset_dir <data save dir> --episode_idx 0
+```shell
+python3 visualize_episodes.py --dataset_dir <data save dir> --episode_idx 0
+```
 
 To replay the episode collected with real robot, run:
 
-    python3 replay_episodes.py --dataset_dir <data save dir> --episode_idx 0
+```shell
+python3 replay_episodes.py --dataset_dir <data save dir> --episode_idx 0
+```
 
-To lower 4 robots before e.g. cutting off power, run:
+To safely lower 4 robots before e.g. cutting off power, run:
 
-    python3 sleep.py
-
+```shell
+python3 sleep.py
+```
