@@ -7,22 +7,23 @@
   <license>BSD</license>
   <author email="tonyzhao@stanford.edu">Tony Zhao</author>
 
-  <buildtool_depend>ament_cmake_python</buildtool_depend>
+  <!-- <buildtool_depend>ament_cmake</buildtool_depend> -->
+  <buildtool_depend>ament_python</buildtool_depend>
 
-  <build_depend>interbotix_ros_slate</build_depend>
-  <build_depend>interbotix_xs_modules</build_depend>
-  <build_depend>interbotix_xs_msgs</build_depend>
-  <build_depend>interbotix_xsarm_control</build_depend>
-  <build_depend>realsense2_camera</build_depend>
-  <build_depend>rosbag</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rviz</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>std_srvs</build_depend>
-  <build_depend>tf2_ros</build_depend>
-  <build_depend>usb_cam</build_depend>
+  <depend>interbotix_ros_slate</depend>
+  <depend>interbotix_xs_modules</depend>
+  <depend>interbotix_xs_msgs</depend>
+  <depend>interbotix_xsarm_control</depend>
+  <depend>rclpy</depend>
+  <depend>realsense2_camera</depend>
+  <depend>rviz2</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>tf2_ros</depend>
+  <depend>usb_cam</depend>
 
   <export>
+    <build_type>ament_python</build_type>
   </export>
 </package>

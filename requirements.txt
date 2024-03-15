@@ -2,7 +2,9 @@ dm_control
 dm-env
 einops
 h5py
+IPython
 matplotlib
+modern_robotics
 mujoco
 opencv-python
 packaging
@@ -13,4 +15,5 @@ rospkg
 torch
 torchvision
 tqdm
+transforms3d
 wandb
