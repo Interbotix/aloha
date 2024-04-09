@@ -74,6 +74,7 @@ def launch_setup(context, *args, **kwargs):
             'robot_description': robot_description_leader_left_launch_arg,
             'use_sim': use_sim_launch_arg,
         }.items(),
+        condition=IfCondition(LaunchConfiguration('launch_leaders')),
     )
 
     xsarm_control_leader_right_launch_include = IncludeLaunchDescription(
@@ -97,6 +98,7 @@ def launch_setup(context, *args, **kwargs):
             'robot_description': robot_description_leader_right_launch_arg,
             'use_sim': use_sim_launch_arg,
         }.items(),
+        condition=IfCondition(LaunchConfiguration('launch_leaders')),
     )
 
     xsarm_control_follower_left_launch_include = IncludeLaunchDescription(
