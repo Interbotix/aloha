@@ -21,6 +21,10 @@ from aloha.robot_utils import (
     setup_leader_bot,
 )
 import dm_env
+from interbotix_common_modules.common_robot.robot import (
+    get_interbotix_global_node,
+    InterbotixRobotNode,
+)
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_modules.xs_robot.slate import InterbotixSlate
 from interbotix_xs_msgs.msg import JointSingleCommand
@@ -66,7 +70,7 @@ class RealEnv:
 
     def __init__(
         self,
-        init_node: bool,
+        node: InterbotixRobotNode,
         setup_robots: bool = True,
         setup_base: bool = False,
         is_mobile: bool = IS_MOBILE,
@@ -76,34 +80,39 @@ class RealEnv:
             group_name='arm',
             gripper_name='gripper',
             robot_name='follower_left',
-            init_node=init_node,
+            node=node,
         )
         self.follower_bot_right = InterbotixManipulatorXS(
             robot_model='vx300s',
             group_name='arm',
             gripper_name='gripper',
             robot_name='follower_right',
-            init_node=False,
+            node=node,
         )
+
+        self.recorder_left = Recorder('left', node=node)
+        self.recorder_right = Recorder('right', node=node)
+        self.image_recorder = ImageRecorder(node=node, is_mobile=IS_MOBILE)
+        self.gripper_command = JointSingleCommand(name='gripper')
+
         if setup_robots:
             self.setup_robots()
 
         if setup_base:
             if is_mobile:
-                self.setup_base()
+                self.setup_base(node)
             else:
                 raise ValueError((
                     'Requested to set up base but robot is not mobile. '
                     "Hint: check the 'IS_MOBILE' constant."
                 ))
 
-        self.recorder_left = Recorder('left', init_node=False)
-        self.recorder_right = Recorder('right', init_node=False)
-        self.image_recorder = ImageRecorder(init_node=False, is_mobile=IS_MOBILE)
-        self.gripper_command = JointSingleCommand(name='gripper')
 
-    def setup_base(self):
-        self.base = InterbotixSlate('aloha', init_node=False)
+    def setup_base(self, node):
+        self.base = InterbotixSlate(
+            'aloha',
+            node=node,
+        )
         self.base.base.set_motor_torque(False)
 
     def setup_robots(self):
@@ -231,7 +240,7 @@ class RealEnv:
             # base_action_linear = np.clip(base_action[0], -linear_vel_limit, linear_vel_limit)
             # base_action_angular = np.clip(base_action[1], -angular_vel_limit, angular_vel_limit)
             base_action_linear, base_action_angular = base_action
-            self.base.base.command_velocity(x=base_action_linear, yaw=base_action_angular)
+            self.base.base.command_velocity_xyaw(x=base_action_linear, yaw=base_action_angular)
         # time.sleep(DT)
         if get_obs:
             obs = self.get_observation(get_base_vel)
@@ -259,8 +268,8 @@ def get_action(
     return action
 
 
-def make_real_env(init_node, setup_robots=True, setup_base=False):
-    env = RealEnv(init_node, setup_robots, setup_base)
+def make_real_env(node, setup_robots=True, setup_base=False):
+    env = RealEnv(node, setup_robots, setup_base)
     return env
 
 
@@ -278,26 +287,24 @@ def test_real_teleop():
     onscreen_render = True
     render_cam = 'cam_left_wrist'
 
+    node = get_interbotix_global_node()
+
     # source of data
     leader_bot_left = InterbotixManipulatorXS(
         robot_model='wx250s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='leader_left',
-        init_node=True,
+        node=node,
     )
     leader_bot_right = InterbotixManipulatorXS(
         robot_model='wx250s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='leader_right',
-        init_node=False,
+        node=node,
     )
     setup_leader_bot(leader_bot_left)
     setup_leader_bot(leader_bot_right)
 
     # setup the environment
-    env = make_real_env(init_node=False)
+    env = make_real_env(node=node)
     ts = env.reset(fake=True)
     episode = [ts]
     # setup visualization
