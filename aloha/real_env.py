@@ -123,9 +123,7 @@ class RealEnv:
         right_qpos_raw = self.recorder_right.qpos
         left_arm_qpos = left_qpos_raw[:6]
         right_arm_qpos = right_qpos_raw[:6]
-        # this is position not joint
         left_gripper_qpos = [FOLLOWER_GRIPPER_POSITION_NORMALIZE_FN(left_qpos_raw[7])]
-        # this is position not joint
         right_gripper_qpos = [FOLLOWER_GRIPPER_POSITION_NORMALIZE_FN(right_qpos_raw[7])]
         return np.concatenate(
             [left_arm_qpos, left_gripper_qpos, right_arm_qpos, right_gripper_qpos]
@@ -224,7 +222,8 @@ class RealEnv:
             step_type=dm_env.StepType.FIRST,
             reward=self.get_reward(),
             discount=None,
-            observation=self.get_observation())
+            observation=self.get_observation(),
+        )
 
     def step(self, action, base_action=None, get_base_vel=False, get_obs=True):
         state_len = int(len(action) / 2)
@@ -234,13 +233,8 @@ class RealEnv:
         self.follower_bot_right.arm.set_joint_positions(right_action[:6], blocking=False)
         self.set_gripper_pose(left_action[-1], right_action[-1])
         if base_action is not None:
-            # linear_vel_limit = 1.5
-            # angular_vel_limit = 1.5
-            # base_action_linear = np.clip(base_action[0], -linear_vel_limit, linear_vel_limit)
-            # base_action_angular = np.clip(base_action[1], -angular_vel_limit, angular_vel_limit)
             base_action_linear, base_action_angular = base_action
             self.base.base.command_velocity_xyaw(x=base_action_linear, yaw=base_action_angular)
-        # time.sleep(DT)
         if get_obs:
             obs = self.get_observation(get_base_vel)
         else:
@@ -302,17 +296,17 @@ def test_real_teleop():
     setup_leader_bot(leader_bot_left)
     setup_leader_bot(leader_bot_right)
 
-    # setup the environment
+    # environment setup
     env = make_real_env(node=node)
     ts = env.reset(fake=True)
     episode = [ts]
-    # setup visualization
+    # visualization setup
     if onscreen_render:
         ax = plt.subplot()
         plt_img = ax.imshow(ts.observation['images'][render_cam])
         plt.ion()
 
-    for t in range(1000):
+    for _ in range(1000):
         action = get_action(leader_bot_left, leader_bot_right)
         ts = env.step(action)
         episode.append(ts)
