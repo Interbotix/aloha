@@ -7,65 +7,53 @@ from aloha.robot_utils import (
     torque_on
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
-
+from interbotix_common_modules.common_robot.robot import (
+    robot_startup,
+    robot_shutdown,
+    create_interbotix_global_node,
+)
 
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument('--all', action='store_true', default=False)
     args = argparser.parse_args()
 
+    node = create_interbotix_global_node('aloha')
+
     follower_bot_left = InterbotixManipulatorXS(
         robot_model='vx300s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='follower_left',
-        init_node=True,
+        node=node,
     )
     follower_bot_right = InterbotixManipulatorXS(
         robot_model='vx300s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='follower_right',
-        init_node=False,
+        node=node,
     )
     leader_bot_left = InterbotixManipulatorXS(
         robot_model='wx250s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='leader_left',
-        init_node=False,
+        node=node,
     )
     leader_bot_right = InterbotixManipulatorXS(
         robot_model='wx250s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='leader_right',
-        init_node=False,
+        node=node,
     )
+
+    robot_startup(node)
 
     all_bots = [follower_bot_left, follower_bot_right, leader_bot_left, leader_bot_right]
     follower_bots = [follower_bot_left, follower_bot_right]
     bots_to_sleep = all_bots if args.all else follower_bots
 
-    follower_sleep_position = (0., -1.7, 1.55, 0., 0.65, 0.)
-    leader_sleep_left_position = (0., 0., 0., 0., 0., 0.)
-    leader_sleep_right_position = (0., 0., 0., 0., 0., 0.)
-
-    positions_to_sleep_followers = [follower_sleep_position] * 2
-    positions_to_sleep_all = (
-        positions_to_sleep_followers + [leader_sleep_left_position, leader_sleep_right_position]
-    )
-    positions_to_sleep = positions_to_sleep_all if args.all else positions_to_sleep_followers
-
-    leader_bots = [leader_bot_left, leader_bot_right]
     for bot in bots_to_sleep:
         torque_on(bot)
 
-    move_arms(bots_to_sleep, positions_to_sleep, move_time=2.0)
+    for bot in bots_to_sleep:
+        bot.arm.go_to_sleep_pose(moving_time=2.0, accel_time=0.3)
 
-    if args.all:
-        safe_sleep = (0., -1.80, 1.55, 0., -1.57, 0.)
-        move_arms(leader_bots, [safe_sleep] * 2, move_time=2.0)
+    robot_shutdown(node)
 
 
 if __name__ == '__main__':
