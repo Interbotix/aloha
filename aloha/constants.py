@@ -1,15 +1,13 @@
 # flake8: noqa
 
 import os
-import pathlib
 from rclpy.duration import Duration
 from rclpy.constants import S_TO_NS
 
 ### Task parameters
 
 ### Set to True for Mobile ALOHA, False for Stationary ALOHA
-IS_MOBILE = True  # for Mobile ALOHA
-# IS_MOBILE = False  # for Stationary ALOHA
+IS_MOBILE = os.environ.get('INTERBOTIX_ALOHA_IS_MOBILE', 'true').lower() == 'true'
 
 COLOR_IMAGE_TOPIC_NAME = '{}/color/image_rect_raw'  # for RealSense cameras
 # COLOR_IMAGE_TOPIC_NAME = 'usb_{}/image_raw'  # for USB cameras

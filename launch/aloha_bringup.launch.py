@@ -1,6 +1,3 @@
-from interbotix_xs_modules.xs_common import (
-    get_interbotix_xsarm_models,
-)
 from interbotix_xs_modules.xs_launch import (
     declare_interbotix_xsarm_robot_description_launch_arguments,
 )
@@ -13,12 +10,11 @@ from launch.actions import (
 )
 from launch.conditions import (
   IfCondition,
-  UnlessCondition,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
+    EnvironmentVariable,
     LaunchConfiguration,
-    TextSubstitution,
     PathJoinSubstitution,
 )
 from launch_ros.actions import Node
@@ -51,7 +47,7 @@ def launch_setup(context, *args, **kwargs):
 
     use_sim_launch_arg = LaunchConfiguration('use_sim')
 
-    is_mobile = LaunchConfiguration('is_mobile').perform(context) == 'true'
+    is_mobile = LaunchConfiguration('is_mobile').perform(context).lower() == 'true'
 
     xsarm_control_leader_left_launch_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -453,7 +449,10 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'is_mobile',
-            default_value='true',
+            default_value=EnvironmentVariable(
+                name='INTERBOTIX_ALOHA_IS_MOBILE',
+                default_value='true',
+            ),
             choices=('true', 'false'),
             description='',
         )
