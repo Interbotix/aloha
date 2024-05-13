@@ -1,10 +1,11 @@
 # flake8: noqa
 
-### Task parameters
 import os
 import pathlib
 from rclpy.duration import Duration
 from rclpy.constants import S_TO_NS
+
+### Task parameters
 
 ### Set to True for Mobile ALOHA, False for Stationary ALOHA
 IS_MOBILE = True  # for Mobile ALOHA
@@ -30,12 +31,14 @@ LEADER_GRIPPER_CLOSE_THRESH = 0.0
 # Left finger position limits (qpos[7]), right_finger = -1 * left_finger
 LEADER_GRIPPER_POSITION_OPEN = 0.0323
 LEADER_GRIPPER_POSITION_CLOSE = 0.0185
+
 FOLLOWER_GRIPPER_POSITION_OPEN = 0.0579
 FOLLOWER_GRIPPER_POSITION_CLOSE = 0.0440
 
 # Gripper joint limits (qpos[6])
 LEADER_GRIPPER_JOINT_OPEN = 0.8298
 LEADER_GRIPPER_JOINT_CLOSE = -0.0552
+
 FOLLOWER_GRIPPER_JOINT_OPEN = 1.6214
 FOLLOWER_GRIPPER_JOINT_CLOSE = 0.6197
 
@@ -64,6 +67,13 @@ FOLLOWER_JOINT2POS = lambda x: FOLLOWER_GRIPPER_POSITION_UNNORMALIZE_FN((x - FOL
 LEADER_GRIPPER_JOINT_MID = (LEADER_GRIPPER_JOINT_OPEN + LEADER_GRIPPER_JOINT_CLOSE)/2
 
 TASK_CONFIGS = {
+
+    'aloha_mobile_hello_aloha':{
+        'dataset_dir': DATA_DIR + '/aloha_mobile_hello_aloha',
+        'episode_len': 1000,
+        'camera_names': ['cam_high']
+    },
+
     'aloha_mobile_dummy':{
         'dataset_dir': DATA_DIR + '/aloha_mobile_dummy',
         'episode_len': 1000,
