@@ -33,6 +33,11 @@ import cv2
 import h5py
 # import h5py_cache
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
+from interbotix_common_modules.common_robot.robot import (
+    create_interbotix_global_node,
+    robot_shutdown,
+    robot_startup,
+)
 import IPython
 import numpy as np
 import rclpy
@@ -105,23 +110,23 @@ def opening_ceremony(
 def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite):
     print(f'Dataset name: {dataset_name}')
 
+    node = create_interbotix_global_node('aloha')
+
     # source of data
     leader_bot_left = InterbotixManipulatorXS(
         robot_model='wx250s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='leader_left',
-        init_node=True,
+        node=node,
     )
     leader_bot_right = InterbotixManipulatorXS(
         robot_model='wx250s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='leader_right',
-        init_node=False,
+        node=node,
     )
 
-    env = make_real_env(init_node=False, setup_robots=False, setup_base=IS_MOBILE)
+    env = make_real_env(node, setup_robots=False, setup_base=IS_MOBILE)
+
+    robot_startup(node)
 
     # saving dataset
     if not os.path.isdir(dataset_dir):
@@ -280,6 +285,7 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
 
     print(f'Saving: {time.time() - t0:.1f} secs')
 
+    robot_shutdown()
     return True
 
 
@@ -297,7 +303,7 @@ def main(args):
 
     dataset_name = f'episode_{episode_idx}'
     print(dataset_name + '\n')
-    while rclpy.ok():
+    while True:
         is_healthy = capture_one_episode(
             DT,
             max_timesteps,
