@@ -28,11 +28,8 @@ setup(
     description='ALOHA: A Low-cost Open-source Hardware System for Bimanual Teleoperation',
     license='BSD',
     tests_require=['pytest'],
-    # entry_points={
-    #     'console_scripts': [
-    #         # 'armtag_tuner_gui = aloha.armtag_tuner_gui:main',
-    #         # 'picture_snapper = aloha.picture_snapper:main',
-    #         # 'pointcloud_tuner_gui = aloha.pointcloud_tuner_gui:main',
-    #     ],
-    # },
+    entry_points={
+        'console_scripts': [
+        ],
+    },
 )
