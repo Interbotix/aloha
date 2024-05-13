@@ -21,7 +21,6 @@ e = IPython.embed
 class ImageRecorder:
     def __init__(
         self,
-        # init_node: bool = True,
         is_mobile: bool = IS_MOBILE,
         is_debug: bool = False,
         node: Node = None,
@@ -34,8 +33,6 @@ class ImageRecorder:
         else:
             self.camera_names = ['cam_high', 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
 
-        # if init_node:
-        #     rospy.init_node('image_recorder', anonymous=True)
         for cam_name in self.camera_names:
             setattr(self, f'{cam_name}_image', None)
             setattr(self, f'{cam_name}_secs', None)
