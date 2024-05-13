@@ -15,13 +15,13 @@ from aloha.robot_utils import (
     torque_off,
     torque_on,
 )
-from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_common_modules.common_robot.robot import (
-    robot_startup,
-    robot_shutdown,
     create_interbotix_global_node,
     get_interbotix_global_node,
+    robot_shutdown,
+    robot_startup,
 )
+from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
 import rclpy
 
@@ -81,11 +81,9 @@ def press_to_start(
     print('Close the grippers to start')
     pressed = False
     while rclpy.ok() and not pressed:
-        gripper_pos_left = get_arm_gripper_positions(leader_bot_left)
-        gripper_pos_right = get_arm_gripper_positions(leader_bot_right)
         pressed = (
-            (gripper_pos_left < LEADER_GRIPPER_CLOSE_THRESH) and
-            (gripper_pos_right < LEADER_GRIPPER_CLOSE_THRESH)
+            (get_arm_gripper_positions(leader_bot_left) < LEADER_GRIPPER_CLOSE_THRESH) and
+            (get_arm_gripper_positions(leader_bot_right) < LEADER_GRIPPER_CLOSE_THRESH)
         )
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
     torque_off(leader_bot_left)
@@ -148,8 +146,8 @@ def main() -> None:
         # sleep DT
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
 
-
     robot_shutdown(node)
+
 
 if __name__ == '__main__':
     main()

@@ -31,13 +31,12 @@ from aloha.robot_utils import (
 )
 import cv2
 import h5py
-# import h5py_cache
-from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
     robot_shutdown,
     robot_startup,
 )
+from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 import IPython
 import numpy as np
 import rclpy
@@ -64,7 +63,9 @@ def opening_ceremony(
 
     follower_bot_right.core.robot_reboot_motors('single', 'gripper', True)
     follower_bot_right.core.robot_set_operating_modes('group', 'arm', 'position')
-    follower_bot_right.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+    follower_bot_right.core.robot_set_operating_modes(
+        'single', 'gripper', 'current_based_position'
+    )
     leader_bot_right.core.robot_set_operating_modes('group', 'arm', 'position')
     leader_bot_right.core.robot_set_operating_modes('single', 'gripper', 'position')
     follower_bot_left.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)

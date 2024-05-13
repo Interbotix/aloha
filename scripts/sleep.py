@@ -3,15 +3,15 @@
 import argparse
 
 from aloha.robot_utils import (
-    move_arms,
     torque_on
 )
-from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_common_modules.common_robot.robot import (
-    robot_startup,
-    robot_shutdown,
     create_interbotix_global_node,
+    robot_shutdown,
+    robot_startup,
 )
+from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
+
 
 def main():
     argparser = argparse.ArgumentParser()

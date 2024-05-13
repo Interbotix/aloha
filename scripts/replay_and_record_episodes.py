@@ -11,19 +11,16 @@ from aloha.constants import (
 )
 from aloha.real_env import make_real_env
 from aloha.robot_utils import (
-    # calibrate_linear_vel,
     move_grippers,
-    # postprocess_base_action,
-    # smooth_base_action,
 )
 import h5py
+from interbotix_common_modules.common_robot.robot import (
+    create_interbotix_global_node,
+    robot_startup,
+)
 import IPython
 import matplotlib.pyplot as plt
 import numpy as np
-from interbotix_common_modules.common_robot.robot import (
-    robot_startup,
-    create_interbotix_global_node,
-)
 e = IPython.embed
 
 STATE_NAMES = JOINT_NAMES + ['gripper', 'left_finger', 'right_finger']
@@ -80,7 +77,6 @@ def main(args):
     robot_startup(node)
 
     env.reset()
-    # base_actions = smooth_base_action(base_actions)
     obs_wheels = []
     obs_base = []
 
@@ -92,8 +88,6 @@ def main(args):
     DT = 1 / FPS
     for action, base_action in zip(apply_actions, apply_base_actions):
         time1 = time.time()
-        # base_action = calibrate_linear_vel(base_action, c=0.19)
-        # base_action = postprocess_base_action(base_action)
         ts = env.step(action, base_action, get_base_vel=True)
         obs_wheels.append(ts.observation['base_vel'])
         obs_base.append(ts.observation['base_vel'])

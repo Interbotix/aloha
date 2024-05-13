@@ -5,7 +5,6 @@ import os
 import time
 
 from aloha.constants import (
-    # DATA_DIR,
     FOLLOWER_GRIPPER_JOINT_OPEN,
     FPS,
     IS_MOBILE,
@@ -13,19 +12,15 @@ from aloha.constants import (
 )
 from aloha.real_env import (
     make_real_env,
-    setup_follower_bot,
 )
 from aloha.robot_utils import (
-    # calibrate_linear_vel,
     move_grippers,
-    # postprocess_base_action,
-    # smooth_base_action,
-)
-from interbotix_common_modules.common_robot.robot import (
-    robot_startup,
-    create_interbotix_global_node,
 )
 import h5py
+from interbotix_common_modules.common_robot.robot import (
+    create_interbotix_global_node,
+    robot_startup,
+)
 import IPython
 import matplotlib.pyplot as plt
 import numpy as np
