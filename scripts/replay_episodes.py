@@ -5,17 +5,25 @@ import os
 import time
 
 from aloha.constants import (
-    DATA_DIR,
+    # DATA_DIR,
     FOLLOWER_GRIPPER_JOINT_OPEN,
     FPS,
+    IS_MOBILE,
     JOINT_NAMES,
 )
-from aloha.real_env import make_real_env
+from aloha.real_env import (
+    make_real_env,
+    setup_follower_bot,
+)
 from aloha.robot_utils import (
     # calibrate_linear_vel,
     move_grippers,
     # postprocess_base_action,
     # smooth_base_action,
+)
+from interbotix_common_modules.common_robot.robot import (
+    robot_startup,
+    create_interbotix_global_node,
 )
 import h5py
 import IPython
@@ -105,9 +113,17 @@ def main(args):
         # processed_base_actions = smooth_base_action(base_actions)
         processed_base_actions = base_actions
 
-    env = make_real_env(init_node=True, setup_base=True)
+    node = create_interbotix_global_node('aloha')
+
+    env = make_real_env(node, setup_robots=False, setup_base=IS_MOBILE)
+
+    if IS_MOBILE:
+        env.base.base.set_motor_torque(True)
+    robot_startup(node)
+
+    env.setup_robots()
+
     env.reset()
-    env.base.base.set_motor_torque(True)
     obs_wheels = []
     obs_base = []
 
@@ -158,7 +174,7 @@ if __name__ == '__main__':
         action='store',
         type=str,
         help='Dataset dir.',
-        default=DATA_DIR,
+        # default=DATA_DIR,
         required=True,
     )
     parser.add_argument(
@@ -166,6 +182,7 @@ if __name__ == '__main__':
         action='store',
         type=int,
         help='Episode index.',
+        default=0,
         required=False,
     )
     parser.add_argument(
