@@ -20,7 +20,10 @@ import h5py
 import IPython
 import matplotlib.pyplot as plt
 import numpy as np
-
+from interbotix_common_modules.common_robot.robot import (
+    robot_startup,
+    create_interbotix_global_node,
+)
 e = IPython.embed
 
 STATE_NAMES = JOINT_NAMES + ['gripper', 'left_finger', 'right_finger']
@@ -69,7 +72,13 @@ def main(args):
         actions = root['/action'][()]
         base_actions = root['/base_action'][()]
 
-    env = make_real_env(init_node=True, setup_base=True)
+    node = create_interbotix_global_node('aloha')
+
+    env = make_real_env(node, setup_base=True)
+    env.base.base.set_motor_torque(True)
+
+    robot_startup(node)
+
     env.reset()
     # base_actions = smooth_base_action(base_actions)
     obs_wheels = []
