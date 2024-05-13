@@ -6,7 +6,7 @@ from rclpy.constants import S_TO_NS
 
 ### Task parameters
 
-### Set to True for Mobile ALOHA, False for Stationary ALOHA
+### Set to 'true for Mobile ALOHA, 'false' for Stationary ALOHA
 IS_MOBILE = os.environ.get('INTERBOTIX_ALOHA_IS_MOBILE', 'true').lower() == 'true'
 
 COLOR_IMAGE_TOPIC_NAME = '{}/color/image_rect_raw'  # for RealSense cameras
@@ -20,7 +20,10 @@ DT_DURATION = Duration(seconds=0, nanoseconds=DT * S_TO_NS)
 
 FPS = 50
 JOINT_NAMES = ['waist', 'shoulder', 'elbow', 'forearm_roll', 'wrist_angle', 'wrist_rotate']
-START_ARM_POSE = [0, -0.96, 1.16, 0, -0.3, 0, 0.02239, -0.02239,  0, -0.96, 1.16, 0, -0.3, 0, 0.02239, -0.02239]
+START_ARM_POSE = [
+    0.0, -0.96, 1.16, 0.0, -0.3, 0.0, 0.02239, -0.02239,
+    0.0, -0.96, 1.16, 0.0, -0.3, 0.0, 0.02239, -0.02239
+]
 
 LEADER_GRIPPER_CLOSE_THRESH = 0.0
 
