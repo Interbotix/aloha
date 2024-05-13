@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
-import time
-
 from aloha.constants import (
-    DT,
+    DT_DURATION,
     FOLLOWER_GRIPPER_JOINT_CLOSE,
     LEADER2FOLLOWER_JOINT_FN,
     LEADER_GRIPPER_CLOSE_THRESH,
@@ -18,6 +16,12 @@ from aloha.robot_utils import (
     torque_on,
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
+from interbotix_common_modules.common_robot.robot import (
+    robot_startup,
+    robot_shutdown,
+    create_interbotix_global_node,
+    get_interbotix_global_node,
+)
 from interbotix_xs_msgs.msg import JointSingleCommand
 import rclpy
 
@@ -74,7 +78,7 @@ def press_to_start(
     # disable torque for only gripper joint of leader robot to allow user movement
     leader_bot_left.core.robot_torque_enable('single', 'gripper', False)
     leader_bot_right.core.robot_torque_enable('single', 'gripper', False)
-    print('Close the gripper to start')
+    print('Close the grippers to start')
     pressed = False
     while rclpy.ok() and not pressed:
         gripper_pos_left = get_arm_gripper_positions(leader_bot_left)
@@ -83,41 +87,36 @@ def press_to_start(
             (gripper_pos_left < LEADER_GRIPPER_CLOSE_THRESH) and
             (gripper_pos_right < LEADER_GRIPPER_CLOSE_THRESH)
         )
-        time.sleep(DT/10.0)
+        get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
     torque_off(leader_bot_left)
     torque_off(leader_bot_right)
     print('Started!')
 
 
 def main() -> None:
+    node = create_interbotix_global_node('aloha')
     follower_bot_left = InterbotixManipulatorXS(
         robot_model='vx300s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='follower_left',
-        init_node=True,
+        node=node,
     )
     follower_bot_right = InterbotixManipulatorXS(
         robot_model='vx300s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='follower_right',
-        init_node=False,
+        node=node,
     )
     leader_bot_left = InterbotixManipulatorXS(
         robot_model='wx250s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='leader_left',
-        init_node=False,
+        node=node,
     )
     leader_bot_right = InterbotixManipulatorXS(
         robot_model='wx250s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name='leader_right',
-        init_node=False,
+        node=node,
     )
+
+    robot_startup(node)
 
     opening_ceremony(
         leader_bot_left,
@@ -125,6 +124,7 @@ def main() -> None:
         follower_bot_left,
         follower_bot_right,
     )
+
     press_to_start(leader_bot_left, leader_bot_right)
 
     # Teleoperation loop
@@ -146,8 +146,10 @@ def main() -> None:
         follower_bot_left.gripper.core.pub_single.publish(gripper_left_command)
         follower_bot_right.gripper.core.pub_single.publish(gripper_right_command)
         # sleep DT
-        time.sleep(DT)
+        get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
 
+
+    robot_shutdown(node)
 
 if __name__ == '__main__':
     main()
