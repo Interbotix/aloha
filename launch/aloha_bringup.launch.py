@@ -36,16 +36,18 @@ def launch_setup(context, *args, **kwargs):
     follower_modes_left_launch_arg = LaunchConfiguration('follower_modes_left')
     follower_modes_right_launch_arg = LaunchConfiguration('follower_modes_right')
 
-    robot_description_leader_left_launch_arg = \
-      LaunchConfiguration('robot_description_leader_left')
-    robot_description_leader_right_launch_arg = \
-      LaunchConfiguration('robot_description_leader_right')
-    robot_description_follower_left_launch_arg = \
-      LaunchConfiguration('robot_description_follower_left')
-    robot_description_follower_right_launch_arg = \
-      LaunchConfiguration('robot_description_follower_right')
-
-    use_sim_launch_arg = LaunchConfiguration('use_sim')
+    robot_description_leader_left_launch_arg = LaunchConfiguration(
+        'robot_description_leader_left'
+    )
+    robot_description_leader_right_launch_arg = LaunchConfiguration(
+        'robot_description_leader_right'
+    )
+    robot_description_follower_left_launch_arg = LaunchConfiguration(
+        'robot_description_follower_left'
+    )
+    robot_description_follower_right_launch_arg = LaunchConfiguration(
+        'robot_description_follower_right'
+    )
 
     is_mobile = LaunchConfiguration('is_mobile').perform(context).lower() == 'true'
 
@@ -68,7 +70,6 @@ def launch_setup(context, *args, **kwargs):
             ]),
             'use_rviz': 'false',
             'robot_description': robot_description_leader_left_launch_arg,
-            'use_sim': use_sim_launch_arg,
         }.items(),
         condition=IfCondition(LaunchConfiguration('launch_leaders')),
     )
@@ -92,7 +93,6 @@ def launch_setup(context, *args, **kwargs):
             ]),
             'use_rviz': 'false',
             'robot_description': robot_description_leader_right_launch_arg,
-            'use_sim': use_sim_launch_arg,
         }.items(),
         condition=IfCondition(LaunchConfiguration('launch_leaders')),
     )
@@ -116,7 +116,6 @@ def launch_setup(context, *args, **kwargs):
             ]),
             'use_rviz': 'false',
             'robot_description': robot_description_follower_left_launch_arg,
-            'use_sim': use_sim_launch_arg,
         }.items(),
     )
 
@@ -139,7 +138,6 @@ def launch_setup(context, *args, **kwargs):
             ]),
             'use_rviz': 'false',
             'robot_description': robot_description_follower_right_launch_arg,
-            'use_sim': use_sim_launch_arg,
         }.items(),
     )
 
@@ -386,28 +384,9 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            'use_sim',
-            default_value='false',
-            choices=('true', 'false'),
-            description=(
-                'if `true`, the DYNAMIXEL simulator node is run; use RViz to visualize the'
-                " robot's motion; if `false`, the real DYNAMIXEL driver node is run."
-            ),
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
             'use_cameras',
             default_value='true',
             choices=('true', 'false'),
-            description='if `true`, launches the camera drivers.',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'camera_type',
-            default_value='realsense',
-            choices=('realsense', 'usb'),
             description='if `true`, launches the camera drivers.',
         )
     )
@@ -437,17 +416,6 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            'use_sim',
-            default_value='false',
-            choices=('true', 'false'),
-            description=(
-                'if `true`, the DYNAMIXEL simulator node is run; use RViz to visualize the'
-                " robot's motion; if `false`, the real DYNAMIXEL driver node is run."
-            ),
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
             'is_mobile',
             default_value=EnvironmentVariable(
                 name='INTERBOTIX_ALOHA_IS_MOBILE',
@@ -470,7 +438,6 @@ def generate_launch_description():
             'use_aloha_rviz',
             default_value='false',
             choices=('true', 'false'),
-            description='',
         )
     )
     declared_arguments.append(
@@ -481,7 +448,6 @@ def generate_launch_description():
                 'rviz',
                 'aloha.rviz',
             ]),
-            description='',
         )
     )
     declared_arguments.extend(
