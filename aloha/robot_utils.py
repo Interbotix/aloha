@@ -12,7 +12,7 @@ from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointGroupCommand, JointSingleCommand
 import IPython
 import numpy as np
-import rclpy
+from rclpy.node import Node
 from sensor_msgs.msg import Image, JointState
 
 e = IPython.embed
@@ -24,7 +24,7 @@ class ImageRecorder:
         # init_node: bool = True,
         is_mobile: bool = IS_MOBILE,
         is_debug: bool = False,
-        node: rclpy.Node = None,
+        node: Node = None,
     ):
         self.is_debug = is_debug
         self.bridge = CvBridge()
@@ -51,7 +51,7 @@ class ImageRecorder:
             else:
                 raise NotImplementedError
             topic = COLOR_IMAGE_TOPIC_NAME.format(cam_name)
-            node.create_subscription(Image, topic, callback_func)
+            node.create_subscription(Image, topic, callback_func, 20)
             if self.is_debug:
                 setattr(self, f'{cam_name}_timestamps', deque(maxlen=50))
         time.sleep(0.5)
@@ -62,13 +62,13 @@ class ImageRecorder:
             f'{cam_name}_image',
             self.bridge.imgmsg_to_cv2(data, desired_encoding='passthrough')
         )
-        setattr(self, f'{cam_name}_secs', data.header.stamp.secs)
-        setattr(self, f'{cam_name}_nsecs', data.header.stamp.nsecs)
+        setattr(self, f'{cam_name}_secs', data.header.stamp.sec)
+        setattr(self, f'{cam_name}_nsecs', data.header.stamp.nanosec)
         if self.is_debug:
             getattr(
                 self,
                 f'{cam_name}_timestamps'
-            ).append(data.header.stamp.secs + data.header.stamp.secs * 1e-9)
+            ).append(data.header.stamp.sec + data.header.stamp.sec * 1e-9)
 
     def image_cb_cam_high(self, data):
         cam_name = 'cam_high'
@@ -107,9 +107,8 @@ class Recorder:
     def __init__(
         self,
         side: str,
-        # init_node: bool = True,
         is_debug: bool = False,
-        node: rclpy.Node = None,
+        node: Node = None,
     ):
         self.secs = None
         self.nsecs = None
@@ -119,22 +118,23 @@ class Recorder:
         self.gripper_command = None
         self.is_debug = is_debug
 
-        # if init_node:
-        #     rospy.init_node('recorder', anonymous=True)
         node.create_subscription(
             JointState,
             f'/follower_{side}/joint_states',
-            self.follower_state_cb
+            self.follower_state_cb,
+            10,
         )
         node.create_subscription(
             JointGroupCommand,
             f'/follower_{side}/commands/joint_group',
-            self.follower_arm_commands_cb
+            self.follower_arm_commands_cb,
+            10,
         )
         node.create_subscription(
             JointSingleCommand,
             f'/follower_{side}/commands/joint_single',
-            self.follower_gripper_commands_cb
+            self.follower_gripper_commands_cb,
+            10,
         )
         if self.is_debug:
             self.joint_timestamps = deque(maxlen=50)
