@@ -3,11 +3,10 @@
   <name>aloha</name>
   <version>0.0.0</version>
   <description>ALOHA: A Low-cost Open-source Hardware System for Bimanual Teleoperation</description>
-  <maintainer email="tonyzhao@stanford.edu">Tony Zhao</maintainer>
+  <maintainer email="trsupport@trossenrobotics.com">Trossen Robotics</maintainer>
   <license>BSD</license>
   <author email="tonyzhao@stanford.edu">Tony Zhao</author>
 
-  <!-- <buildtool_depend>ament_cmake</buildtool_depend> -->
   <buildtool_depend>ament_python</buildtool_depend>
 
   <depend>interbotix_ros_slate</depend>
