@@ -107,7 +107,6 @@ class RealEnv:
                     "Hint: check the 'IS_MOBILE' constant."
                 ))
 
-
     def setup_base(self, node):
         self.base = InterbotixSlate(
             'aloha',
