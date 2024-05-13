@@ -66,17 +66,13 @@ def press_to_start(leader_bot: InterbotixManipulatorXS):
 def main(robot_side: str):
     follower_bot = InterbotixManipulatorXS(
         robot_model='vx300s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name=f'follower_{robot_side}',
-        init_node=True
+        node_owner=True,
     )
     leader_bot = InterbotixManipulatorXS(
         robot_model='wx250s',
-        group_name='arm',
-        gripper_name='gripper',
         robot_name=f'leader_{robot_side}',
-        init_node=False
+        node_owner=False,
     )
 
     prep_robots(leader_bot, follower_bot)
