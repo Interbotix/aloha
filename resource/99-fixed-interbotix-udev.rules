@@ -1,0 +1,8 @@
+# Follow the steps in the setup guides to fill out the ATTRS{serial}=="" field for each device.
+# Once complete, copy this file to '/etc/udev/rules.d/': `cp 99-fixed-interbotix-udev.rules /etc/udev/rules.d/`
+# Then, reload and trigger the rules: `sudo udevadm control --reload-rules && sudo udevadm trigger`
+
+SUBSYSTEM=="tty", ATTRS{serial}=="", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_leader_right"
+SUBSYSTEM=="tty", ATTRS{serial}=="", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_leader_left"
+SUBSYSTEM=="tty", ATTRS{serial}=="", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_follower_right"
+SUBSYSTEM=="tty", ATTRS{serial}=="", ENV{ID_MM_DEVICE_IGNORE}="1", ATTR{device/latency_timer}="1", SYMLINK+="ttyDXL_follower_left"
