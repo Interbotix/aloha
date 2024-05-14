@@ -22,6 +22,7 @@ from aloha.robot_utils import (
 )
 import dm_env
 from interbotix_common_modules.common_robot.robot import (
+    create_interbotix_global_node,
     get_interbotix_global_node,
     InterbotixRobotNode,
 )
@@ -261,7 +262,15 @@ def get_action(
     return action
 
 
-def make_real_env(node, setup_robots=True, setup_base=False):
+def make_real_env(
+    node: InterbotixRobotNode = None,
+    setup_robots: bool = True,
+    setup_base: bool = False
+):
+    if node is None:
+        node = get_interbotix_global_node()
+        if node is None:
+            node = create_interbotix_global_node('aloha')
     env = RealEnv(node, setup_robots, setup_base)
     return env
 
