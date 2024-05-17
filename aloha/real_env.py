@@ -178,7 +178,7 @@ class RealEnv:
         move_arms(
             [self.follower_bot_left, self.follower_bot_right],
             [reset_position, reset_position],
-            move_time=1.0,
+            moving_time=1.0,
         )
 
     def _reset_gripper(self):
@@ -190,12 +190,12 @@ class RealEnv:
         move_grippers(
             [self.follower_bot_left, self.follower_bot_right],
             [FOLLOWER_GRIPPER_JOINT_OPEN] * 2,
-            move_time=0.5,
+            moving_time=0.5,
         )
         move_grippers(
             [self.follower_bot_left, self.follower_bot_right],
             [FOLLOWER_GRIPPER_JOINT_CLOSE] * 2,
-            move_time=1.0,
+            moving_time=1.0,
         )
 
     def get_observation(self, get_base_vel=False):

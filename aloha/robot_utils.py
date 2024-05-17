@@ -182,9 +182,9 @@ def get_arm_gripper_positions(bot: InterbotixManipulatorXS):
 def move_arms(
     bot_list: Sequence[InterbotixManipulatorXS],
     target_pose_list: Sequence[Sequence[float]],
-    move_time: float = 1.0,
-):
-    num_steps = int(move_time / DT)
+    moving_time: float = 1.0,
+) -> None:
+    num_steps = int(moving_time / DT)
     curr_pose_list = [get_arm_joint_positions(bot) for bot in bot_list]
     zipped_lists = zip(curr_pose_list, target_pose_list)
     traj_list = [
@@ -196,13 +196,33 @@ def move_arms(
         time.sleep(DT)
 
 
+def sleep_arms(
+    bot_list: Sequence[InterbotixManipulatorXS],
+    moving_time: float = 5.0,
+    home_first: bool = True,
+) -> None:
+    """Command given list of arms to their sleep poses, optionally to their home poses first.
+
+    :param bot_list: List of bots to command to their sleep poses
+    :param moving_time: Duration in seconds the movements should take, defaults to 5.0
+    :param home_first: True to command the arms to their home poses first, defaults to True
+    """
+    if home_first:
+        for bot in bot_list:
+            bot.arm.go_to_home_pose(moving_time=moving_time, blocking=False)
+        time.sleep(moving_time)
+    for bot in bot_list:
+        bot.arm.go_to_sleep_pose(moving_time=moving_time, blocking=False)
+    time.sleep(moving_time)
+
+
 def move_grippers(
     bot_list: Sequence[InterbotixManipulatorXS],
     target_pose_list: Sequence[float],
-    move_time: float,
+    moving_time: float,
 ):
     gripper_command = JointSingleCommand(name='gripper')
-    num_steps = int(move_time / DT)
+    num_steps = int(moving_time / DT)
     curr_pose_list = [get_arm_gripper_positions(bot) for bot in bot_list]
     zipped_lists = zip(curr_pose_list, target_pose_list)
     traj_list = [

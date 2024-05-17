@@ -39,12 +39,12 @@ def prep_robots(leader_bot: InterbotixManipulatorXS, follower_bot: InterbotixMan
 
     # move arms to starting position
     start_arm_qpos = START_ARM_POSE[:6]
-    move_arms([leader_bot, follower_bot], [start_arm_qpos] * 2, move_time=1.0)
+    move_arms([leader_bot, follower_bot], [start_arm_qpos] * 2, moving_time=1.0)
     # move grippers to starting position
     move_grippers(
         [leader_bot, follower_bot],
         [LEADER_GRIPPER_JOINT_MID, FOLLOWER_GRIPPER_JOINT_CLOSE],
-        move_time=0.5
+        moving_time=0.5
     )
 
 

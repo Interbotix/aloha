@@ -110,7 +110,7 @@ def main(args):
     move_grippers(
         [env.follower_bot_left, env.follower_bot_right],
         [FOLLOWER_GRIPPER_JOINT_OPEN] * 2,
-        move_time=0.5,
+        moving_time=0.5,
     )
 
 

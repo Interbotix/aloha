@@ -3,7 +3,8 @@
 import argparse
 
 from aloha.robot_utils import (
-    torque_on
+    sleep_arms,
+    torque_on,
 )
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -14,8 +15,16 @@ from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 
 
 def main():
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument('--all', action='store_true', default=False)
+    argparser = argparse.ArgumentParser(
+        prog='sleep',
+        description='Sends arms to their sleep poses',
+    )
+    argparser.add_argument(
+        '-a', '--all',
+        help='If set, also sleeps leaders arms',
+        action='store_true',
+        default=False,
+    )
     args = argparser.parse_args()
 
     node = create_interbotix_global_node('aloha')
@@ -50,8 +59,7 @@ def main():
     for bot in bots_to_sleep:
         torque_on(bot)
 
-    for bot in bots_to_sleep:
-        bot.arm.go_to_sleep_pose(moving_time=2.0, accel_time=0.3)
+    sleep_arms(bots_to_sleep, home_first=True)
 
     robot_shutdown(node)
 

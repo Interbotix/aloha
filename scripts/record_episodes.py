@@ -80,13 +80,13 @@ def opening_ceremony(
     move_arms(
         [leader_bot_left, follower_bot_left, leader_bot_right, follower_bot_right],
         [start_arm_qpos] * 4,
-        move_time=1.5,
+        moving_time=1.5,
     )
     # move grippers to starting position
     move_grippers(
         [leader_bot_left, follower_bot_left, leader_bot_right, follower_bot_right],
         [LEADER_GRIPPER_JOINT_MID, FOLLOWER_GRIPPER_JOINT_CLOSE] * 2,
-        move_time=0.5,
+        moving_time=0.5,
     )
 
     # press gripper to start data collection
@@ -174,7 +174,7 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
     move_grippers(
         [env.follower_bot_left, env.follower_bot_right],
         [FOLLOWER_GRIPPER_JOINT_OPEN] * 2,
-        move_time=0.5
+        moving_time=0.5
     )
 
     freq_mean = print_dt_diagnosis(actual_dt_history)
