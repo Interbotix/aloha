@@ -183,7 +183,7 @@ def launch_setup(context, *args, **kwargs):
         name='follower_left_transform_broadcaster',
         arguments=[
             '0.5',
-            '-0.25',
+            '0.25',
             '0.0',
             '0.0',
             '0.0',
@@ -201,7 +201,7 @@ def launch_setup(context, *args, **kwargs):
         name='follower_right_transform_broadcaster',
         arguments=[
             '0.5',
-            '0.25',
+            '-0.25',
             '0.0',
             '0.0',
             '0.0',
