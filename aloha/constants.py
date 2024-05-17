@@ -69,8 +69,8 @@ TASK_CONFIGS = {
 
     'aloha_mobile_hello_aloha':{
         'dataset_dir': DATA_DIR + '/aloha_mobile_hello_aloha',
-        'episode_len': 1000,
-        'camera_names': ['cam_high']
+        'episode_len': 800,
+        'camera_names': ['cam_high', 'cam_left_wrist', 'cam_right_wrist']
     },
 
     'aloha_mobile_dummy':{
