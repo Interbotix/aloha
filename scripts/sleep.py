@@ -33,21 +33,25 @@ def main():
         robot_model='vx300s',
         robot_name='follower_left',
         node=node,
+        iterative_update_fk=False,
     )
     follower_bot_right = InterbotixManipulatorXS(
         robot_model='vx300s',
         robot_name='follower_right',
         node=node,
+        iterative_update_fk=False,
     )
     leader_bot_left = InterbotixManipulatorXS(
         robot_model='wx250s',
         robot_name='leader_left',
         node=node,
+        iterative_update_fk=False,
     )
     leader_bot_right = InterbotixManipulatorXS(
         robot_model='wx250s',
         robot_name='leader_right',
         node=node,
+        iterative_update_fk=False,
     )
 
     robot_startup(node)

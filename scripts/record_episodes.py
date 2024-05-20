@@ -118,11 +118,13 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
         robot_model='wx250s',
         robot_name='leader_left',
         node=node,
+        iterative_update_fk=False,
     )
     leader_bot_right = InterbotixManipulatorXS(
         robot_model='wx250s',
         robot_name='leader_right',
         node=node,
+        iterative_update_fk=False,
     )
 
     env = make_real_env(node, setup_robots=False, setup_base=IS_MOBILE)

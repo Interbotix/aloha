@@ -82,6 +82,7 @@ class RealEnv:
             gripper_name='gripper',
             robot_name='follower_left',
             node=node,
+            iterative_update_fk=False,
         )
         self.follower_bot_right = InterbotixManipulatorXS(
             robot_model='vx300s',
@@ -89,6 +90,7 @@ class RealEnv:
             gripper_name='gripper',
             robot_name='follower_right',
             node=node,
+            iterative_update_fk=False,
         )
 
         self.recorder_left = Recorder('left', node=node)
