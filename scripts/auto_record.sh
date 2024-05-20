@@ -1,6 +1,6 @@
 ROS_DISTRO=humble
 
-VENV_ACTIVATE_PATH=$HOME/interbotix_ws/venv/bin/activate
+VENV_ACTIVATE_PATH=$HOME/aloha/bin/activate
 ROS_SETUP_PATH=/opt/ros/$ROS_DISTRO/setup.bash
 WORKSPACE_SETUP_PATH=$HOME/interbotix_ws/install/setup.bash
 RECORD_EPISODES="$HOME/interbotix_ws/src/aloha/scripts/record_episodes.py"
