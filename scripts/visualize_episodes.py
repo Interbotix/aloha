@@ -10,7 +10,7 @@ import numpy as np
 
 e = IPython.embed
 
-JOINT_NAMES = ['waist', 'shoulder', 'elbow', 'forearm_roll', 'wrist_angle', 'wrist_rotate']
+from aloha.constants import JOINT_NAMES
 STATE_NAMES = JOINT_NAMES + ['gripper']
 BASE_STATE_NAMES = ['linear_vel', 'angular_vel']
 

@@ -11,7 +11,7 @@ COLOR_IMAGE_TOPIC_NAME = '{}/color/image_rect_raw'  # for RealSense cameras
 
 DATA_DIR = os.path.expanduser('~/data')
 
-### ALOHA fixed constants
+### ALOHA Fixed Constants
 DT = 0.02
 
 try:
