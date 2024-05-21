@@ -263,8 +263,34 @@ def launch_setup(context, *args, **kwargs):
     joystick_teleop_node = Node(
         package='teleop_twist_joy',
         executable='teleop_node',
-        name='teleop_node',
+        name='base_joystick_teleop',
         namespace='mobile_base',
+        parameters=[
+            ParameterFile(
+                PathJoinSubstitution([
+                    FindPackageShare('aloha'),
+                    'config',
+                    'base_joystick_teleop.yaml'
+                ]),
+                allow_substs=True,
+            ),
+        ],
+        condition=AndCondition([
+            IfCondition(LaunchConfiguration('use_base')),
+            IfCondition(LaunchConfiguration('use_joystick_teleop')),
+        ]),
+    )
+
+    joy_node = Node(
+        package='joy',
+        executable='joy_node',
+        name='joy_node',
+        namespace='mobile_base',
+        parameters=[{
+            'dev': '/dev/input/js0',
+            'deadzone': 0.3,
+            'autorepeat_rate': 20.0,
+        }],
         condition=AndCondition([
             IfCondition(LaunchConfiguration('use_base')),
             IfCondition(LaunchConfiguration('use_joystick_teleop')),
@@ -294,6 +320,7 @@ def launch_setup(context, *args, **kwargs):
         realsense_ros_launch_includes_group_action,
         slate_base_node,
         joystick_teleop_node,
+        joy_node,
         rviz2_node,
     ]
 

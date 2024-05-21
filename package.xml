@@ -13,6 +13,7 @@
   <depend>interbotix_xs_modules</depend>
   <depend>interbotix_xs_msgs</depend>
   <depend>interbotix_xsarm_control</depend>
+  <depend>joy</depend>
   <depend>rclpy</depend>
   <depend>realsense2_camera</depend>
   <depend>rviz2</depend>
