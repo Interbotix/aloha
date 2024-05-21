@@ -19,6 +19,7 @@
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
+  <depend>teleop_twist_joy</depend>
   <depend>tf2_ros</depend>
   <depend>usb_cam</depend>
 
