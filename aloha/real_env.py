@@ -29,12 +29,8 @@ from interbotix_common_modules.common_robot.robot import (
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_modules.xs_robot.slate import InterbotixSlate
 from interbotix_xs_msgs.msg import JointSingleCommand
-import IPython
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-e = IPython.embed
 
 
 class RealEnv:

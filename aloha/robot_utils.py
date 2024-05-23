@@ -10,12 +10,9 @@ from aloha.constants import (
 from cv_bridge import CvBridge
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointGroupCommand, JointSingleCommand
-import IPython
 import numpy as np
 from rclpy.node import Node
 from sensor_msgs.msg import Image, JointState
-
-e = IPython.embed
 
 
 class ImageRecorder:
