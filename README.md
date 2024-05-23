@@ -11,8 +11,8 @@ To get started with your ALOHA kit, follow the [ALOHA Getting Started Documentat
 
 To train imitation learning algorithms, you would also need to install:
 
-* [ACT for Stationary ALOHA](https://github.com/tonyzhaozh/act).
-* [ACT++ for Mobile ALOHA](https://github.com/MarkFzp/act-plus-plus)
+* [ACT for Stationary ALOHA](https://github.com/Interbotix/act).
+* [ACT++ for Mobile ALOHA](https://github.com/Interbotix/act-plus-plus)
 
 # Structure
 - [``aloha``](./aloha/): Python package providing useful classes and constants for teleoperation and dataset collection.
