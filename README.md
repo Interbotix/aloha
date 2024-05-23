@@ -5,6 +5,8 @@ Project Websites:
 * [ALOHA](https://tonyzhaozh.github.io/aloha/)
 * [Mobile ALOHA](https://mobile-aloha.github.io/)
 
+Trossen Robotics Documentation: https://docs.trossenrobotics.com/aloha_docs/
+
 This codebase is forked from the [Mobile ALOHA repo](https://github.com/MarkFzp/mobile-aloha), and contains teleoperation and dataset collection and evaluation tools for the Stationary and Mobile ALOHA kits available from Trossen Robotics.
 
 To get started with your ALOHA kit, follow the [ALOHA Getting Started Documentation](https://docs.trossenrobotics.com/aloha_docs/getting_started.html).
