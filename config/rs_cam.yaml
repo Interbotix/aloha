@@ -6,8 +6,8 @@
         profile: '640,480,60'
         enable_auto_exposure: false
       depth_module:
-        enable_auto_exposure: false
         profile: '640,480,60'
+        enable_auto_exposure: false
       enable_depth: false
       enable_infra: false
       enable_infra1: false
