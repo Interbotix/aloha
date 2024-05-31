@@ -280,13 +280,20 @@ def get_action(
 def make_real_env(
     node: InterbotixRobotNode = None,
     setup_robots: bool = True,
-    setup_base: bool = False
+    setup_base: bool = False,
+    torque_base: bool = False,
 ):
     if node is None:
         node = get_interbotix_global_node()
         if node is None:
             node = create_interbotix_global_node('aloha')
-    env = RealEnv(node, setup_robots, setup_base)
+    env = RealEnv(
+        node=node,
+        setup_robots=setup_robots,
+        setup_base=setup_base,
+        is_mobile=IS_MOBILE,
+        torque_base=torque_base,
+    )
     return env
 
 
