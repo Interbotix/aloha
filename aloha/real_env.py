@@ -71,7 +71,19 @@ class RealEnv:
         setup_robots: bool = True,
         setup_base: bool = False,
         is_mobile: bool = IS_MOBILE,
+        torque_base: bool = False,
     ):
+        """Initialize the Real Robot Environment
+
+        :param node: The InterbotixRobotNode to build the Interbotix API on
+        :param setup_robots: True to run through the arm setup process on init, defaults to True
+        :param setup_base: True to run through the base setup process on init, defaults to False
+        :param is_mobile: True to initialize the Mobile ALOHA environment, False for the Stationary
+            ALOHA environment, defaults to IS_MOBILE
+        :param torque_base: True to torque the base on after setup, False otherwise, defaults to
+            True. Only applies when IS_MOBILE is True
+        :raises ValueError: On providing False for setup_base but the robot is not mobile
+        """
         self.follower_bot_left = InterbotixManipulatorXS(
             robot_model='vx300s',
             group_name='arm',
@@ -99,19 +111,24 @@ class RealEnv:
 
         if setup_base:
             if is_mobile:
-                self.setup_base(node)
+                self.setup_base(node, torque_base)
             else:
                 raise ValueError((
                     'Requested to set up base but robot is not mobile. '
                     "Hint: check the 'IS_MOBILE' constant."
                 ))
 
-    def setup_base(self, node):
+    def setup_base(self, node: InterbotixRobotNode, torque_enable: bool = False):
+        """Create and configure the SLATE base node
+
+        :param node: The InterbotixRobotNode to build the SLATE base module on
+        :param torque_enable: True to torque the base on setup, defaults to False
+        """
         self.base = InterbotixSlate(
             'aloha',
             node=node,
         )
-        self.base.base.set_motor_torque(False)
+        self.base.base.set_motor_torque(torque_enable)
 
     def setup_robots(self):
         setup_follower_bot(self.follower_bot_left)
