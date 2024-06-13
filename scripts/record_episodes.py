@@ -219,7 +219,6 @@ def capture_one_episode(
         '/observations/effort': [],
         '/action': [],
         '/base_action': [],
-        # '/base_action_t265': [],
     }
     for cam_name in camera_names:
         data_dict[f'/observations/images/{cam_name}'] = []
@@ -233,7 +232,6 @@ def capture_one_episode(
         data_dict['/observations/effort'].append(ts.observation['effort'])
         data_dict['/action'].append(action)
         data_dict['/base_action'].append(ts.observation['base_vel'])
-        # data_dict['/base_action_t265'].append(ts.observation['base_vel_t265'])
         for cam_name in camera_names:
             data_dict[f'/observations/images/{cam_name}'].append(
                 ts.observation['images'][cam_name]
@@ -306,7 +304,7 @@ def capture_one_episode(
     return True
 
 
-def main(args):
+def main(args: dict):
     task_config = TASK_CONFIGS[args['task_name']]
     dataset_dir = task_config['dataset_dir']
     max_timesteps = task_config['episode_len']
@@ -394,7 +392,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '-b', '--enable_base_torque',
         action='store_true',
-        help='If set, mobile base will be torqued on during episode recording',
+        help=(
+            'If set, mobile base will be torqued on during episode recording, allowing the use of'
+            ' a joystick controller or some other manual method.'
+        ),
     )
     main(vars(parser.parse_args()))
     # debug()
