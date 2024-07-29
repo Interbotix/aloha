@@ -7,7 +7,11 @@ import os
 # Set to 'true' for Mobile ALOHA, 'false' for Stationary ALOHA
 IS_MOBILE = os.environ.get('INTERBOTIX_ALOHA_IS_MOBILE', 'true').lower() == 'true'
 
-COLOR_IMAGE_TOPIC_NAME = '{}/color/image_rect_raw'  # for RealSense cameras
+# # RealSense cameras image topic (realsense2_camera v4.54)
+# COLOR_IMAGE_TOPIC_NAME = '{}/color/image_rect_raw'
+
+# RealSense cameras image topic (realsense2_camera v4.55 and up)
+COLOR_IMAGE_TOPIC_NAME = '{}/camera/color/image_rect_raw'
 
 DATA_DIR = os.path.expanduser('~/aloha_data')
 
