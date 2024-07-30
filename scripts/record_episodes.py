@@ -203,14 +203,14 @@ def capture_one_episode(
     observations
     - images
         - cam_high          (480, 640, 3) 'uint8'
-        - cam_low           (480, 640, 3) 'uint8'
+        - cam_low           (480, 640, 3) 'uint8'   (on Stationary)
         - cam_left_wrist    (480, 640, 3) 'uint8'
         - cam_right_wrist   (480, 640, 3) 'uint8'
     - qpos                  (14,)         'float64'
     - qvel                  (14,)         'float64'
 
     action                  (14,)         'float64'
-    base_action             (2,)          'float64'
+    base_action             (2,)          'float64' (on Mobile)
     """
 
     data_dict = {
@@ -231,7 +231,7 @@ def capture_one_episode(
         data_dict['/observations/qvel'].append(ts.observation['qvel'])
         data_dict['/observations/effort'].append(ts.observation['effort'])
         data_dict['/action'].append(action)
-        data_dict['/base_action'].append(ts.observation['base_vel'])
+        data_dict['/base_action'].append(ts.observation.get('base_vel', [None, None]))
         for cam_name in camera_names:
             data_dict[f'/observations/images/{cam_name}'].append(
                 ts.observation['images'][cam_name]

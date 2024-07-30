@@ -84,6 +84,7 @@ class RealEnv:
             True. Only applies when IS_MOBILE is True
         :raises ValueError: On providing False for setup_base but the robot is not mobile
         """
+        self.is_mobile = is_mobile
         self.follower_bot_left = InterbotixManipulatorXS(
             robot_model='vx300s',
             group_name='arm',
@@ -110,7 +111,7 @@ class RealEnv:
             self.setup_robots()
 
         if setup_base:
-            if is_mobile:
+            if self.is_mobile:
                 self.setup_base(node, torque_base)
             else:
                 raise ValueError((
@@ -219,9 +220,10 @@ class RealEnv:
         obs['qvel'] = self.get_qvel()
         obs['effort'] = self.get_effort()
         obs['images'] = self.get_images()
-        obs['base_vel'] = self.get_base_vel()
         if get_base_vel:
             obs['base_vel'] = self.get_base_vel()
+        else:
+            obs['base_vel'] = [None, None]
         return obs
 
     def get_reward(self):
