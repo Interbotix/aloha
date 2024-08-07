@@ -9,6 +9,7 @@ from launch.actions import (
     DeclareLaunchArgument,
     GroupAction,
     IncludeLaunchDescription,
+    LogInfo,
     OpaqueFunction,
 )
 from launch.conditions import (
@@ -308,6 +309,15 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(LaunchConfiguration('use_aloha_rviz')),
     )
 
+    loginfo_action = LogInfo(msg=[
+        '\nBringing up ALOHA with the following launch configurations: ',
+        '\n- launch_leaders: ', LaunchConfiguration('launch_leaders'),
+        '\n- use_cameras: ', LaunchConfiguration('use_cameras'),
+        '\n- is_mobile: ', LaunchConfiguration('is_mobile'),
+        '\n- use_base: ', LaunchConfiguration('use_base'),
+        '\n- use_joystick_teleop: ', LaunchConfiguration('use_joystick_teleop'),
+    ])
+
     return [
         xsarm_control_leader_left_launch_include,
         xsarm_control_leader_right_launch_include,
@@ -322,6 +332,7 @@ def launch_setup(context, *args, **kwargs):
         joystick_teleop_node,
         joy_node,
         rviz2_node,
+        loginfo_action,
     ]
 
 
