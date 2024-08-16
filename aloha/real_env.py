@@ -27,7 +27,8 @@ from interbotix_common_modules.common_robot.robot import (
     InterbotixRobotNode,
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
-from interbotix_xs_modules.xs_robot.slate import InterbotixSlate
+if IS_MOBILE:
+    from interbotix_xs_modules.xs_robot.slate import InterbotixSlate
 from interbotix_xs_msgs.msg import JointSingleCommand
 import matplotlib.pyplot as plt
 import numpy as np
@@ -84,7 +85,6 @@ class RealEnv:
             True. Only applies when IS_MOBILE is True
         :raises ValueError: On providing False for setup_base but the robot is not mobile
         """
-        self.is_mobile = is_mobile
         self.follower_bot_left = InterbotixManipulatorXS(
             robot_model='vx300s',
             group_name='arm',
@@ -111,7 +111,7 @@ class RealEnv:
             self.setup_robots()
 
         if setup_base:
-            if self.is_mobile:
+            if is_mobile:
                 self.setup_base(node, torque_base)
             else:
                 raise ValueError((
@@ -222,8 +222,6 @@ class RealEnv:
         obs['images'] = self.get_images()
         if get_base_vel:
             obs['base_vel'] = self.get_base_vel()
-        else:
-            obs['base_vel'] = [None, None]
         return obs
 
     def get_reward(self):

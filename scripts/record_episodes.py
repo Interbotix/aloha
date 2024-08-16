@@ -37,13 +37,9 @@ from interbotix_common_modules.common_robot.robot import (
     robot_startup,
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
-import IPython
 import numpy as np
 import rclpy
 from tqdm import tqdm
-
-
-e = IPython.embed
 
 
 def opening_ceremony(
@@ -218,7 +214,6 @@ def capture_one_episode(
         '/observations/qvel': [],
         '/observations/effort': [],
         '/action': [],
-        '/base_action': [],
     }
     for cam_name in camera_names:
         data_dict[f'/observations/images/{cam_name}'] = []
@@ -231,7 +226,7 @@ def capture_one_episode(
         data_dict['/observations/qvel'].append(ts.observation['qvel'])
         data_dict['/observations/effort'].append(ts.observation['effort'])
         data_dict['/action'].append(action)
-        data_dict['/base_action'].append(ts.observation.get('base_vel', [None, None]))
+    #    data_dict['/base_action'].append(ts.observation['base_vel'])
         for cam_name in camera_names:
             data_dict[f'/observations/images/{cam_name}'].append(
                 ts.observation['images'][cam_name]
@@ -289,7 +284,7 @@ def capture_one_episode(
         _ = obs.create_dataset('qvel', (max_timesteps, 14))
         _ = obs.create_dataset('effort', (max_timesteps, 14))
         _ = root.create_dataset('action', (max_timesteps, 14))
-        _ = root.create_dataset('base_action', (max_timesteps, 2))
+#        _ = root.create_dataset('base_action', (max_timesteps, 2))
 
         for name, array in data_dict.items():
             root[name][...] = array
@@ -309,7 +304,6 @@ def main(args: dict):
     dataset_dir = task_config['dataset_dir']
     max_timesteps = task_config['episode_len']
     camera_names = task_config['camera_names']
-
     torque_base = args.get('enable_base_torque', False)
 
     if args['episode_idx'] is not None:
@@ -398,4 +392,3 @@ if __name__ == '__main__':
         ),
     )
     main(vars(parser.parse_args()))
-    # debug()
