@@ -168,7 +168,7 @@ def capture_one_episode(
         t0 = time.time()
         action = get_action(leader_bot_left, leader_bot_right)
         t1 = time.time()
-        ts = env.step(action)
+        ts = env.step(action, get_base_vel=IS_MOBILE)
         t2 = time.time()
         timesteps.append(ts)
         actions.append(action)

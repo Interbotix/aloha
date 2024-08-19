@@ -214,7 +214,7 @@ class RealEnv:
             moving_time=1.0,
         )
 
-    def get_observation(self, get_base_vel=False):
+    def get_observation(self, get_base_vel=IS_MOBILE):
         obs = collections.OrderedDict()
         obs['qpos'] = self.get_qpos()
         obs['qvel'] = self.get_qvel()
