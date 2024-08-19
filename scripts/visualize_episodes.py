@@ -1,16 +1,17 @@
 import argparse
 import os
 
-from aloha.constants import DT
+from aloha.constants import (
+    DT,
+    IS_MOBILE,
+    JOINT_NAMES,
+)
 import cv2
 import h5py
-import IPython
 import matplotlib.pyplot as plt
 import numpy as np
 
-e = IPython.embed
 
-from aloha.constants import JOINT_NAMES
 STATE_NAMES = JOINT_NAMES + ['gripper']
 BASE_STATE_NAMES = ['linear_vel', 'angular_vel']
 
@@ -22,7 +23,6 @@ def load_hdf5(dataset_dir, dataset_name):
         exit()
 
     with h5py.File(dataset_path, 'r') as root:
-        # is_sim = root.attrs['sim']
         compressed = root.attrs.get('compress', False)
         qpos = root['/observations/qpos'][()]
         qvel = root['/observations/qvel'][()]
@@ -31,7 +31,10 @@ def load_hdf5(dataset_dir, dataset_name):
         else:
             effort = None
         action = root['/action'][()]
-        base_action = root['/base_action'][()]
+        if IS_MOBILE:
+            base_action = root['/base_action'][()]
+        else:
+            base_action = None
         image_dict = {}
         for cam_name in root[f'/observations/images/'].keys():
             image_dict[cam_name] = root[f'/observations/images/{cam_name}'][()]
@@ -64,7 +67,7 @@ def main(args):
     else:
         dataset_name = f'episode_{episode_idx}'
 
-    qpos, qvel, effort, action, base_action, image_dict = load_hdf5(dataset_dir, dataset_name)
+    qpos, _, _, action, base_action, image_dict = load_hdf5(dataset_dir, dataset_name)
     print('hdf5 loaded!')
     save_videos(
         image_dict,
@@ -76,21 +79,11 @@ def main(args):
         action,
         plot_path=os.path.join(dataset_dir, dataset_name + '_qpos.png')
     )
-    # visualize_single(
-    #     effort,
-    #     'effort',
-    #     plot_path=os.path.join(dataset_dir, dataset_name + '_effort.png')
-    # )
-    # visualize_single(
-    #     action - qpos,
-    #     'tracking_error',
-    #     plot_path=os.path.join(dataset_dir, dataset_name + '_error.png')
-    # )
-    visualize_base(
-        base_action,
-        plot_path=os.path.join(dataset_dir, dataset_name + '_base_action.png')
-    )
-    # visualize_timestamp(t_list, dataset_path) # TODO addn timestamp back
+    if IS_MOBILE:
+        visualize_base(
+            base_action,
+            plot_path=os.path.join(dataset_dir, dataset_name + '_base_action.png')
+        )
 
 
 def save_videos(video, dt, video_path=None):
@@ -218,11 +211,6 @@ def visualize_base(readings, plot_path=None):
         )
         ax.set_title(f'Joint {dim_idx}: {all_names[dim_idx]}')
         ax.legend()
-
-    # if ylim:
-    #     for dim_idx in range(num_dim):
-    #         ax = axs[dim_idx]
-    #         ax.set_ylim(ylim)
 
     plt.tight_layout()
     plt.savefig(plot_path)
