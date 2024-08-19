@@ -215,6 +215,8 @@ def capture_one_episode(
         '/observations/effort': [],
         '/action': [],
     }
+    if IS_MOBILE:
+        data_dict['/base_action'] = []
     for cam_name in camera_names:
         data_dict[f'/observations/images/{cam_name}'] = []
 
@@ -226,7 +228,8 @@ def capture_one_episode(
         data_dict['/observations/qvel'].append(ts.observation['qvel'])
         data_dict['/observations/effort'].append(ts.observation['effort'])
         data_dict['/action'].append(action)
-    #    data_dict['/base_action'].append(ts.observation['base_vel'])
+        if IS_MOBILE:
+            data_dict['/base_action'].append(ts.observation['base_vel'])
         for cam_name in camera_names:
             data_dict[f'/observations/images/{cam_name}'].append(
                 ts.observation['images'][cam_name]
@@ -284,7 +287,8 @@ def capture_one_episode(
         _ = obs.create_dataset('qvel', (max_timesteps, 14))
         _ = obs.create_dataset('effort', (max_timesteps, 14))
         _ = root.create_dataset('action', (max_timesteps, 14))
-#        _ = root.create_dataset('base_action', (max_timesteps, 2))
+        if IS_MOBILE:
+            _ = root.create_dataset('base_action', (max_timesteps, 2))
 
         for name, array in data_dict.items():
             root[name][...] = array
