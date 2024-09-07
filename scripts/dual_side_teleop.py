@@ -12,8 +12,8 @@ from aloha.robot_utils import (
     get_arm_gripper_positions,
     move_arms,
     move_grippers,
-    torque_off,
     torque_on,
+    GravityCompensationClient
 )
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -86,8 +86,10 @@ def press_to_start(
             (get_arm_gripper_positions(leader_bot_right) < LEADER_GRIPPER_CLOSE_THRESH)
         )
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
-    torque_off(leader_bot_left)
-    torque_off(leader_bot_right)
+    leader_bot_left_gravity_compensation_client = GravityCompensationClient("leader_left")
+    leader_bot_right_gravity_compensation_client = GravityCompensationClient("leader_right")
+    leader_bot_left_gravity_compensation_client.enable()
+    leader_bot_right_gravity_compensation_client.enable()
     print('Started!')
 
 

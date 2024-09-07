@@ -5,6 +5,7 @@ import argparse
 from aloha.robot_utils import (
     sleep_arms,
     torque_on,
+    GravityCompensationClient,
 )
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -55,6 +56,11 @@ def main():
     )
 
     robot_startup(node)
+
+    leader_left_gravity_compensation_client = GravityCompensationClient("leader_left")
+    leader_right_gravity_compensation_client = GravityCompensationClient("leader_right")
+    leader_left_gravity_compensation_client.disable()
+    leader_right_gravity_compensation_client.disable()
 
     all_bots = [follower_bot_left, follower_bot_right, leader_bot_left, leader_bot_right]
     follower_bots = [follower_bot_left, follower_bot_right]

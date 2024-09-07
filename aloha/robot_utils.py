@@ -13,6 +13,7 @@ from interbotix_xs_msgs.msg import JointGroupCommand, JointSingleCommand
 import numpy as np
 from rclpy.node import Node
 from sensor_msgs.msg import Image, JointState
+from std_srvs.srv import SetBool
 
 
 class ImageRecorder:
@@ -293,3 +294,21 @@ def postprocess_base_action(base_action):
     linear_vel, angular_vel = base_action
     angular_vel *= 0.9
     return np.array([linear_vel, angular_vel])
+
+
+class GravityCompensationClient(Node):
+    def __init__(self, robot_name: str):
+        super().__init__('gravity_compensation_client')
+        self.client = self.create_client(SetBool, f'/{robot_name}/gravity_compensation_enable')
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+
+    def enable(self):
+        request = SetBool.Request()
+        request.data = True
+        self.future = self.client.call_async(request)
+
+    def disable(self):
+        request = SetBool.Request()
+        request.data = False
+        self.future = self.client.call_async(request)
