@@ -13,7 +13,8 @@ from aloha.robot_utils import (
     move_arms,
     move_grippers,
     torque_on,
-    GravityCompensationClient
+    torque_off,
+    enable_gravity_compensation,
 )
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -24,6 +25,7 @@ from interbotix_common_modules.common_robot.robot import (
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
 import rclpy
+from ros2node.api import get_node_names
 
 
 def opening_ceremony(
@@ -86,10 +88,15 @@ def press_to_start(
             (get_arm_gripper_positions(leader_bot_right) < LEADER_GRIPPER_CLOSE_THRESH)
         )
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
-    leader_bot_left_gravity_compensation_client = GravityCompensationClient("leader_left")
-    leader_bot_right_gravity_compensation_client = GravityCompensationClient("leader_right")
-    leader_bot_left_gravity_compensation_client.enable()
-    leader_bot_right_gravity_compensation_client.enable()
+    running_nodes = get_node_names(node=get_interbotix_global_node(), include_hidden_nodes=False)
+    if ('gravity_compensation', '/leader_left', '/leader_left/gravity_compensation') in running_nodes:
+        enable_gravity_compensation("leader_left")
+    else:
+        torque_off(leader_bot_left)
+    if ('gravity_compensation', '/leader_right', '/leader_right/gravity_compensation') in running_nodes:
+        enable_gravity_compensation("leader_right")
+    else:
+        torque_off(leader_bot_right)
     print('Started!')
 
 

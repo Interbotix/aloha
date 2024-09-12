@@ -318,6 +318,31 @@ def launch_setup(context, *args, **kwargs):
         '\n- use_joystick_teleop: ', LaunchConfiguration('use_joystick_teleop'),
     ])
 
+    # Create the gravity compensation nodes
+    leader_left_gravity_compensation_node = Node(
+        package='interbotix_gravity_compensation',
+        executable='interbotix_gravity_compensation',
+        name='gravity_compensation',
+        namespace=LaunchConfiguration('robot_name_leader_left'),
+        output='screen',
+        emulate_tty=True,
+        parameters=[{'robot_name': "leader_left",
+                     'motor_specs': LaunchConfiguration('motor_specs')}],
+        condition=IfCondition(LaunchConfiguration('use_gravity_compensation')),
+    )
+
+    leader_right_gravity_compensation_node = Node(
+        package='interbotix_gravity_compensation',
+        executable='interbotix_gravity_compensation',
+        name='gravity_compensation',
+        namespace=LaunchConfiguration('robot_name_leader_right'),
+        output='screen',
+        emulate_tty=True,
+        parameters=[{'robot_name': "leader_right",
+                    'motor_specs': LaunchConfiguration('motor_specs')}],
+        condition=IfCondition(LaunchConfiguration('use_gravity_compensation')),
+    )
+
     return [
         xsarm_control_leader_left_launch_include,
         xsarm_control_leader_right_launch_include,
@@ -333,6 +358,8 @@ def launch_setup(context, *args, **kwargs):
         joy_node,
         rviz2_node,
         loginfo_action,
+        leader_left_gravity_compensation_node,
+        leader_right_gravity_compensation_node,
     ]
 
 
@@ -545,6 +572,26 @@ def generate_launch_description():
             robot_name_launch_config_name='robot_name_follower_right',
             base_link_frame='base_link',
             use_world_frame='false',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'use_gravity_compensation',
+            default_value='true',
+            choices=('true', 'false'),
+            description='if `true`, launches the gravity compensation node',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'motor_specs',
+            default_value=[
+                PathJoinSubstitution([
+                    FindPackageShare('aloha'),
+                    'config']),
+                "/leader_motor_specs.yaml",
+            ],
+            description="the file path to the 'motor specs' YAML file.",
         )
     )
 
