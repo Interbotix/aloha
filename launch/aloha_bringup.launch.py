@@ -326,8 +326,7 @@ def launch_setup(context, *args, **kwargs):
         namespace=LaunchConfiguration('robot_name_leader_left'),
         output='screen',
         emulate_tty=True,
-        parameters=[{'robot_name': "leader_left",
-                     'motor_specs': LaunchConfiguration('motor_specs')}],
+        parameters=[{'motor_specs': LaunchConfiguration('motor_specs')}],
         condition=IfCondition(LaunchConfiguration('use_gravity_compensation')),
     )
 
@@ -338,8 +337,7 @@ def launch_setup(context, *args, **kwargs):
         namespace=LaunchConfiguration('robot_name_leader_right'),
         output='screen',
         emulate_tty=True,
-        parameters=[{'robot_name': "leader_right",
-                    'motor_specs': LaunchConfiguration('motor_specs')}],
+        parameters=[{'motor_specs': LaunchConfiguration('motor_specs')}],
         condition=IfCondition(LaunchConfiguration('use_gravity_compensation')),
     )
 
