@@ -586,8 +586,8 @@ def generate_launch_description():
             default_value=[
                 PathJoinSubstitution([
                     FindPackageShare('aloha'),
-                    'config']),
-                "/leader_motor_specs.yaml",
+                    'config',
+                    'leader_motor_specs.yaml'])
             ],
             description="the file path to the 'motor specs' YAML file.",
         )
