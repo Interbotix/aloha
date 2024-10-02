@@ -36,7 +36,7 @@ def load_hdf5(dataset_dir, dataset_name):
         else:
             base_action = None
         image_dict = {}
-        for cam_name in root[f'/observations/images/'].keys():
+        for cam_name in root['/observations/images/'].keys():
             image_dict[cam_name] = root[f'/observations/images/{cam_name}'][()]
         # if compressed:
         #     compress_len = root['/compress_len'][()]
@@ -230,13 +230,13 @@ def visualize_timestamp(t_list, dataset_path):
 
     ax = axs[0]
     ax.plot(np.arange(len(t_float)), t_float)
-    ax.set_title(f'Camera frame timestamps')
+    ax.set_title('Camera frame timestamps')
     ax.set_xlabel('timestep')
     ax.set_ylabel('time (sec)')
 
     ax = axs[1]
     ax.plot(np.arange(len(t_float)-1), t_float[:-1] - t_float[1:])
-    ax.set_title(f'dt')
+    ax.set_title('dt')
     ax.set_xlabel('timestep')
     ax.set_ylabel('time (sec)')
 

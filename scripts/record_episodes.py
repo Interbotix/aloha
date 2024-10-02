@@ -376,7 +376,7 @@ def print_dt_diagnosis(actual_dt_history):
 
 
 def debug():
-    print(f'====== Debug mode ======')
+    print('====== Debug mode ======')
     recorder = Recorder('right', is_debug=True)
     image_recorder = ImageRecorder(init_node=False, is_debug=True)
     while True:

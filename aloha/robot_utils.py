@@ -218,6 +218,7 @@ def sleep_arms(
         moving_time=moving_time,
     )
 
+
 def move_grippers(
     bot_list: Sequence[InterbotixManipulatorXS],
     target_pose_list: Sequence[float],

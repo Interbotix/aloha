@@ -9,12 +9,10 @@ from aloha.robot_utils import (
 )
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
-    get_interbotix_global_node,
     robot_shutdown,
     robot_startup,
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
-from ros2node.api import get_node_names
 
 
 def main():
@@ -59,11 +57,8 @@ def main():
 
     robot_startup(node)
 
-    running_nodes = get_node_names(node=get_interbotix_global_node(), include_hidden_nodes=False)
-    if ('gravity_compensation', '/leader_left', '/leader_left/gravity_compensation') in running_nodes:
-        disable_gravity_compensation(leader_bot_left)
-    if ('gravity_compensation', '/leader_right', '/leader_right/gravity_compensation') in running_nodes:
-        disable_gravity_compensation(leader_bot_right)
+    disable_gravity_compensation(leader_bot_left)
+    disable_gravity_compensation(leader_bot_right)
 
     all_bots = [follower_bot_left, follower_bot_right, leader_bot_left, leader_bot_right]
     follower_bots = [follower_bot_left, follower_bot_right]
