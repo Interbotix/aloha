@@ -61,9 +61,9 @@ def main():
 
     running_nodes = get_node_names(node=get_interbotix_global_node(), include_hidden_nodes=False)
     if ('gravity_compensation', '/leader_left', '/leader_left/gravity_compensation') in running_nodes:
-        disable_gravity_compensation("leader_left")
+        disable_gravity_compensation(leader_bot_left)
     if ('gravity_compensation', '/leader_right', '/leader_right/gravity_compensation') in running_nodes:
-        disable_gravity_compensation("leader_right")
+        disable_gravity_compensation(leader_bot_right)
 
     all_bots = [follower_bot_left, follower_bot_right, leader_bot_left, leader_bot_right]
     follower_bots = [follower_bot_left, follower_bot_right]

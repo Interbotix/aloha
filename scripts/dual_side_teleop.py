@@ -90,11 +90,11 @@ def press_to_start(
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
     running_nodes = get_node_names(node=get_interbotix_global_node(), include_hidden_nodes=False)
     if ('gravity_compensation', '/leader_left', '/leader_left/gravity_compensation') in running_nodes:
-        enable_gravity_compensation("leader_left")
+        enable_gravity_compensation(leader_bot_left)
     else:
         torque_off(leader_bot_left)
     if ('gravity_compensation', '/leader_right', '/leader_right/gravity_compensation') in running_nodes:
-        enable_gravity_compensation("leader_right")
+        enable_gravity_compensation(leader_bot_right)
     else:
         torque_off(leader_bot_right)
     print('Started!')

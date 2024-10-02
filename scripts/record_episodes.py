@@ -28,6 +28,8 @@ from aloha.robot_utils import (
     Recorder,
     torque_off,
     torque_on,
+    enable_gravity_compensation,
+    disable_gravity_compensation,
 )
 import cv2
 import h5py
@@ -47,6 +49,7 @@ def opening_ceremony(
     leader_bot_right: InterbotixManipulatorXS,
     follower_bot_left: InterbotixManipulatorXS,
     follower_bot_right: InterbotixManipulatorXS,
+    gravity_compensation: bool = False,
 ):
     """Move all 4 robots to a pose where it is easy to start demonstration."""
     # reboot gripper motors, and set operating modes for all motors
@@ -99,8 +102,12 @@ def opening_ceremony(
             (gripper_pos_right < LEADER_GRIPPER_CLOSE_THRESH)
         )
         time.sleep(DT/10)
-    torque_off(leader_bot_left)
-    torque_off(leader_bot_right)
+    if gravity_compensation:
+        enable_gravity_compensation(leader_bot_left)
+        enable_gravity_compensation(leader_bot_right)
+    else:
+        torque_off(leader_bot_left)
+        torque_off(leader_bot_right)
     print('Started!')
 
 
@@ -112,6 +119,7 @@ def capture_one_episode(
     dataset_name,
     overwrite,
     torque_base: bool = False,
+    gravity_compensation: bool = False,
 ):
     print(f'Dataset name: {dataset_name}')
 
@@ -154,7 +162,8 @@ def capture_one_episode(
         leader_bot_left,
         leader_bot_right,
         env.follower_bot_left,
-        env.follower_bot_right
+        env.follower_bot_right,
+        gravity_compensation=gravity_compensation,
     )
 
     # Data collection
@@ -176,9 +185,13 @@ def capture_one_episode(
         time.sleep(max(0, DT - (time.time() - t0)))
     print(f'Avg fps: {max_timesteps / (time.time() - time0)}')
 
-    # Torque on both leader bots
-    torque_on(leader_bot_left)
-    torque_on(leader_bot_right)
+    # End the teleoperation
+    if gravity_compensation:
+        disable_gravity_compensation(leader_bot_left)
+        disable_gravity_compensation(leader_bot_right)
+    else:
+        torque_on(leader_bot_left)
+        torque_on(leader_bot_right)
 
     # Open follower grippers
     env.follower_bot_left.core.robot_set_operating_modes('single', 'gripper', 'position')
@@ -309,6 +322,7 @@ def main(args: dict):
     max_timesteps = task_config['episode_len']
     camera_names = task_config['camera_names']
     torque_base = args.get('enable_base_torque', False)
+    gravity_compensation = args.get('gravity_compensation', False)
 
     if args['episode_idx'] is not None:
         episode_idx = args['episode_idx']
@@ -327,6 +341,7 @@ def main(args: dict):
             dataset_name,
             overwrite,
             torque_base,
+            gravity_compensation,
         )
         if is_healthy:
             break
@@ -394,5 +409,10 @@ if __name__ == '__main__':
             'If set, mobile base will be torqued on during episode recording, allowing the use of'
             ' a joystick controller or some other manual method.'
         ),
+    )
+    parser.add_argument(
+        '--gravity_compensation',
+        action='store_true',
+        help='If set, gravity compensation will be enabled for the leader robots.',
     )
     main(vars(parser.parse_args()))

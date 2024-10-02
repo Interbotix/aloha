@@ -296,6 +296,7 @@ def postprocess_base_action(base_action):
     angular_vel *= 0.9
     return np.array([linear_vel, angular_vel])
 
+
 class GravityCompensationClient(Node):
     def __init__(self, robot_name: str):
         super().__init__('gravity_compensation', namespace=robot_name)
@@ -314,12 +315,14 @@ class GravityCompensationClient(Node):
         self.req.data = False
         rclpy.spin_until_future_complete(self, self.cli.call_async(self.req))
 
-def enable_gravity_compensation(robot_name: str):
-    client = GravityCompensationClient(robot_name)
+
+def enable_gravity_compensation(bot: InterbotixManipulatorXS):
+    client = GravityCompensationClient(bot.core.robot_name)
     client.enable()
     client.destroy_node()
 
-def disable_gravity_compensation(robot_name: str):
-    client = GravityCompensationClient(robot_name)
+
+def disable_gravity_compensation(bot: InterbotixManipulatorXS):
+    client = GravityCompensationClient(bot.core.robot_name)
     client.disable()
     client.destroy_node()
