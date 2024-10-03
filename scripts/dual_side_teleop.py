@@ -11,12 +11,12 @@ from aloha.constants import (
     START_ARM_POSE,
 )
 from aloha.robot_utils import (
+    enable_gravity_compensation,
     get_arm_gripper_positions,
     move_arms,
     move_grippers,
-    torque_on,
     torque_off,
-    enable_gravity_compensation,
+    torque_on,
 )
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -166,8 +166,8 @@ def main(args: dict) -> None:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--gravity_compensation',
+        '-g', '--gravity_compensation',
         action='store_true',
-        help='If set, gravity compensation will be enabled for the leader robots.',
+        help='If set, gravity compensation will be enabled for the leader robots when teleop starts.',
     )
     main(vars(parser.parse_args()))

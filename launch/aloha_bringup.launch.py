@@ -326,7 +326,7 @@ def launch_setup(context, *args, **kwargs):
         namespace=LaunchConfiguration('robot_name_leader_left'),
         output='screen',
         emulate_tty=True,
-        parameters=[{'motor_specs': LaunchConfiguration('motor_specs')}],
+        parameters=[{'motor_specs': LaunchConfiguration('leader_motor_specs_left')}],
         condition=IfCondition(LaunchConfiguration('use_gravity_compensation')),
     )
 
@@ -337,7 +337,7 @@ def launch_setup(context, *args, **kwargs):
         namespace=LaunchConfiguration('robot_name_leader_right'),
         output='screen',
         emulate_tty=True,
-        parameters=[{'motor_specs': LaunchConfiguration('motor_specs')}],
+        parameters=[{'motor_specs': LaunchConfiguration('leader_motor_specs_right')}],
         condition=IfCondition(LaunchConfiguration('use_gravity_compensation')),
     )
 
@@ -582,14 +582,26 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            'motor_specs',
+            'leader_motor_specs_left',
             default_value=[
                 PathJoinSubstitution([
                     FindPackageShare('aloha'),
                     'config',
-                    'leader_motor_specs.yaml'])
+                    'leader_motor_specs_left.yaml'])
             ],
-            description="the file path to the 'motor specs' YAML file.",
+            description="the file path to the 'motor specs' YAML file for the left leader arm.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'leader_motor_specs_right',
+            default_value=[
+                PathJoinSubstitution([
+                    FindPackageShare('aloha'),
+                    'config',
+                    'leader_motor_specs_right.yaml'])
+            ],
+            description="the file path to the 'motor specs' YAML file for the right leader arm.",
         )
     )
 

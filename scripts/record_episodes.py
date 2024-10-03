@@ -21,6 +21,8 @@ from aloha.real_env import (
     make_real_env
 )
 from aloha.robot_utils import (
+    disable_gravity_compensation,
+    enable_gravity_compensation,
     get_arm_gripper_positions,
     ImageRecorder,
     move_arms,
@@ -28,8 +30,6 @@ from aloha.robot_utils import (
     Recorder,
     torque_off,
     torque_on,
-    enable_gravity_compensation,
-    disable_gravity_compensation,
 )
 import cv2
 import h5py
@@ -411,8 +411,8 @@ if __name__ == '__main__':
         ),
     )
     parser.add_argument(
-        '--gravity_compensation',
+        '-g', '--gravity_compensation',
         action='store_true',
-        help='If set, gravity compensation will be enabled for the leader robots.',
+        help='If set, gravity compensation will be enabled for the leader robots when teleop starts.',
     )
     main(vars(parser.parse_args()))
