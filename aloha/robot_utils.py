@@ -9,12 +9,13 @@ from aloha.constants import (
 )
 from cv_bridge import CvBridge
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
+from interbotix_xs_modules.xs_robot.gravity_compensation import (
+    InterbotixGravityCompensationInterface,
+)
 from interbotix_xs_msgs.msg import JointGroupCommand, JointSingleCommand
 import numpy as np
-import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, JointState
-from std_srvs.srv import SetBool
 
 
 class ImageRecorder:
@@ -298,32 +299,11 @@ def postprocess_base_action(base_action):
     return np.array([linear_vel, angular_vel])
 
 
-class GravityCompensationClient(Node):
-    def __init__(self, robot_name: str):
-        super().__init__('gravity_compensation', namespace=robot_name)
-        self.robot_name = robot_name
-        self.cli = self.create_client(SetBool, f'/{robot_name}/gravity_compensation_enable')
-        while not self.cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info(f'service {self.cli.srv_name} not available, waiting again...')
-        self.req = SetBool.Request()
-        self.req.data = False
-
-    def enable(self):
-        self.req.data = True
-        rclpy.spin_until_future_complete(self, self.cli.call_async(self.req))
-
-    def disable(self):
-        self.req.data = False
-        rclpy.spin_until_future_complete(self, self.cli.call_async(self.req))
-
-
 def enable_gravity_compensation(bot: InterbotixManipulatorXS):
-    client = GravityCompensationClient(bot.core.robot_name)
-    client.enable()
-    client.destroy_node()
+    gravity_compensation = InterbotixGravityCompensationInterface(bot.core)
+    gravity_compensation.enable()
 
 
 def disable_gravity_compensation(bot: InterbotixManipulatorXS):
-    client = GravityCompensationClient(bot.core.robot_name)
-    client.disable()
-    client.destroy_node()
+    gravity_compensation = InterbotixGravityCompensationInterface(bot.core)
+    gravity_compensation.disable()
