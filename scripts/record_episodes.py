@@ -3,6 +3,7 @@
 import argparse
 import os
 import time
+import yaml
 
 
 from aloha.constants import (
@@ -44,106 +45,120 @@ import rclpy
 from tqdm import tqdm
 
 
-def opening_ceremony(
-    leader_bot_left: InterbotixManipulatorXS,
-    leader_bot_right: InterbotixManipulatorXS,
-    follower_bot_left: InterbotixManipulatorXS,
-    follower_bot_right: InterbotixManipulatorXS,
-    gravity_compensation: bool = False,
-):
-    """Move all 4 robots to a pose where it is easy to start demonstration."""
-    # reboot gripper motors, and set operating modes for all motors
-    follower_bot_left.core.robot_reboot_motors('single', 'gripper', True)
-    follower_bot_left.core.robot_set_operating_modes('group', 'arm', 'position')
-    follower_bot_left.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
-    leader_bot_left.core.robot_set_operating_modes('group', 'arm', 'position')
-    leader_bot_left.core.robot_set_operating_modes('single', 'gripper', 'position')
-    follower_bot_left.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
+IS_MOBILE =False
 
-    follower_bot_right.core.robot_reboot_motors('single', 'gripper', True)
-    follower_bot_right.core.robot_set_operating_modes('group', 'arm', 'position')
-    follower_bot_right.core.robot_set_operating_modes(
-        'single', 'gripper', 'current_based_position'
-    )
-    leader_bot_right.core.robot_set_operating_modes('group', 'arm', 'position')
-    leader_bot_right.core.robot_set_operating_modes('single', 'gripper', 'position')
-    follower_bot_left.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
 
-    torque_on(follower_bot_left)
-    torque_on(leader_bot_left)
-    torque_on(follower_bot_right)
-    torque_on(leader_bot_right)
+# Function to load YAML file
+def load_yaml_file(yaml_path='../config/aloha_static.yaml'):
+    with open(yaml_path, 'r') as f:
+        return yaml.safe_load(f)
 
-    # move arms to starting position
-    start_arm_qpos = START_ARM_POSE[:6]
-    move_arms(
-        [leader_bot_left, follower_bot_left, leader_bot_right, follower_bot_right],
-        [start_arm_qpos] * 4,
-        moving_time=1.5,
-    )
-    # move grippers to starting position
-    move_grippers(
-        [leader_bot_left, follower_bot_left, leader_bot_right, follower_bot_right],
-        [LEADER_GRIPPER_JOINT_MID, FOLLOWER_GRIPPER_JOINT_CLOSE] * 2,
-        moving_time=0.5,
-    )
+
+def opening_ceremony(robots: dict, gravity_compensation: bool) -> None:
+    """Move all leader-follower pairs of robots to a starting pose for demonstration."""
+    # Separate leader and follower robots
+    leader_bots = {name: bot for name, bot in robots.items() if 'leader' in name}
+    follower_bots = {name: bot for name, bot in robots.items() if 'follower' in name}
+
+    # Define pairs for leader and follower bots based on naming convention
+    pairs = []
+
+    # Check for common suffixes (_left, _right, _solo)
+    for leader_name, leader_bot in leader_bots.items():
+        for suffix in ['_left', '_right', '_solo']:
+            if leader_name.endswith(suffix):
+                follower_name = f"follower{suffix}"
+                if follower_name in follower_bots:
+                    pairs.append((leader_bot, follower_bots[follower_name]))
+                break
+        else:
+            # Handle case if no specific suffix is found, just pair remaining leader and follower
+            if follower_bots:
+                follower_bot_name, follower_bot = follower_bots.popitem()
+                pairs.append((leader_bot, follower_bot))
+
+    # Ensure that we have at least one pair of leader and follower bots
+    if not pairs:
+        raise ValueError("No valid leader-follower pairs found in the robot dictionary.")
+
+    # Iterate through the leader-follower pairs
+    for leader_bot, follower_bot in pairs:
+        # Reboot gripper motors and set operating modes for all motors
+        follower_bot.core.robot_reboot_motors('single', 'gripper', True)
+        follower_bot.core.robot_set_operating_modes('group', 'arm', 'position')
+        follower_bot.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+        leader_bot.core.robot_set_operating_modes('group', 'arm', 'position')
+        leader_bot.core.robot_set_operating_modes('single', 'gripper', 'position')
+        follower_bot.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
+
+        # Turn on torque for both the leader and follower
+        torque_on(follower_bot)
+        torque_on(leader_bot)
+
+        # Move arms to starting position
+        start_arm_qpos = START_ARM_POSE[:6]
+        move_arms(
+            [leader_bot, follower_bot],
+            [start_arm_qpos] * 2,
+            moving_time=4.0,
+        )
+
+        # Move grippers to starting position
+        move_grippers(
+            [leader_bot, follower_bot],
+            [LEADER_GRIPPER_JOINT_MID, FOLLOWER_GRIPPER_JOINT_CLOSE],
+            moving_time=0.5
+        )
 
     # press gripper to start data collection
-    # disable torque for only gripper joint of leader robot to allow user movement
-    leader_bot_left.core.robot_torque_enable('single', 'gripper', False)
-    leader_bot_right.core.robot_torque_enable('single', 'gripper', False)
-    print('Close the gripper to start')
+    # Extract leader bots from the robots dictionary
+    leader_bots = {name: bot for name, bot in robots.items() if 'leader' in name}
+
+    # Disable torque for the gripper joint of each leader bot to allow user movement
+    for leader_name, leader_bot in leader_bots.items():
+        leader_bot.core.robot_torque_enable('single', 'gripper', False)
+
+    print('Close the grippers to start')
+
+    # Wait for the user to close the grippers of all leader robots
     pressed = False
     while rclpy.ok() and not pressed:
-        gripper_pos_left = get_arm_gripper_positions(leader_bot_left)
-        gripper_pos_right = get_arm_gripper_positions(leader_bot_right)
-        pressed = (
-            (gripper_pos_left < LEADER_GRIPPER_CLOSE_THRESH) and
-            (gripper_pos_right < LEADER_GRIPPER_CLOSE_THRESH)
+        pressed = all(
+            get_arm_gripper_positions(leader_bot) < LEADER_GRIPPER_CLOSE_THRESH
+            for leader_bot in leader_bots.values()
         )
         time.sleep(DT/10)
-    if gravity_compensation:
-        enable_gravity_compensation(leader_bot_left)
-        enable_gravity_compensation(leader_bot_right)
-    else:
-        torque_off(leader_bot_left)
-        torque_off(leader_bot_right)
+    # Enable gravity compensation or turn off torque based on the parameter
+    for leader_name, leader_bot in leader_bots.items():
+        if gravity_compensation:
+            enable_gravity_compensation(leader_bot)
+        else:
+            torque_off(leader_bot)
+
     print('Started!')
+    
 
 
 def capture_one_episode(
     dt,
     max_timesteps,
-    camera_names,
     dataset_dir,
     dataset_name,
     overwrite,
     torque_base: bool = False,
     gravity_compensation: bool = False,
+    config: dict = None
 ):
     print(f'Dataset name: {dataset_name}')
 
     node = create_interbotix_global_node('aloha')
-
-    # source of data
-    leader_bot_left = InterbotixManipulatorXS(
-        robot_model='wx250s',
-        robot_name='leader_left',
-        node=node,
-        iterative_update_fk=False,
-    )
-    leader_bot_right = InterbotixManipulatorXS(
-        robot_model='wx250s',
-        robot_name='leader_right',
-        node=node,
-        iterative_update_fk=False,
-    )
 
     env = make_real_env(
         node=node,
         setup_robots=False,
         setup_base=IS_MOBILE,
         torque_base=torque_base,
+        config=config
     )
 
     robot_startup(node)
@@ -159,15 +174,13 @@ def capture_one_episode(
     # move all 4 robots to a starting pose where it is easy to start teleoperation, then wait till
     # both gripper closed
     opening_ceremony(
-        leader_bot_left,
-        leader_bot_right,
-        env.follower_bot_left,
-        env.follower_bot_right,
+        env.robots,
         gravity_compensation=gravity_compensation,
     )
 
     # Data collection
     ts = env.reset(fake=True)
+
     timesteps = [ts]
     actions = []
     actual_dt_history = []
@@ -175,7 +188,7 @@ def capture_one_episode(
     DT = 1 / FPS
     for t in tqdm(range(max_timesteps)):
         t0 = time.time()
-        action = get_action(leader_bot_left, leader_bot_right)
+        action = get_action(env.robots)
         t1 = time.time()
         ts = env.step(action, get_base_vel=IS_MOBILE)
         t2 = time.time()
@@ -186,19 +199,23 @@ def capture_one_episode(
     print(f'Avg fps: {max_timesteps / (time.time() - time0)}')
 
     # End the teleoperation
-    if gravity_compensation:
-        disable_gravity_compensation(leader_bot_left)
-        disable_gravity_compensation(leader_bot_right)
-    else:
-        torque_on(leader_bot_left)
-        torque_on(leader_bot_right)
+    leader_bots = {name: robot for name, robot in env.robots.items() if 'leader' in name}
+
+    for name, robot in leader_bots.items():
+        if gravity_compensation:
+            disable_gravity_compensation(robot)
+        else:
+            torque_on(robot)
 
     # Open follower grippers
-    env.follower_bot_left.core.robot_set_operating_modes('single', 'gripper', 'position')
-    env.follower_bot_right.core.robot_set_operating_modes('single', 'gripper', 'position')
+    follower_bots = {name: robot for name, robot in env.robots.items() if 'follower' in name}
+
+    for name, robot in follower_bots.items():
+        robot.core.robot_set_operating_modes('single', 'gripper', 'position')
+
     move_grippers(
-        [env.follower_bot_left, env.follower_bot_right],
-        [FOLLOWER_GRIPPER_JOINT_OPEN] * 2,
+        list(follower_bots.values()),  # Pass the follower bots dynamically
+        [FOLLOWER_GRIPPER_JOINT_OPEN] * len(follower_bots),  # Adjust the length based on the number of followers
         moving_time=0.5
     )
 
@@ -228,8 +245,11 @@ def capture_one_episode(
         '/observations/effort': [],
         '/action': [],
     }
-    if IS_MOBILE:
+    if config.get('base', {}).get('enable', False):
         data_dict['/base_action'] = []
+
+    camera_names = [camera['name'] for camera in config.get('cameras', {}).get('camera_instances', [])]
+
     for cam_name in camera_names:
         data_dict[f'/observations/images/{cam_name}'] = []
 
@@ -241,8 +261,10 @@ def capture_one_episode(
         data_dict['/observations/qvel'].append(ts.observation['qvel'])
         data_dict['/observations/effort'].append(ts.observation['effort'])
         data_dict['/action'].append(action)
-        if IS_MOBILE:
+
+        if config.get('base', {}).get('enable', False):
             data_dict['/base_action'].append(ts.observation['base_vel'])
+
         for cam_name in camera_names:
             data_dict[f'/observations/images/{cam_name}'].append(
                 ts.observation['images'][cam_name]
@@ -283,6 +305,14 @@ def capture_one_episode(
         print(f'padding: {time.time() - t0:.2f}s')
 
     # HDF5
+
+    # Get the number of follower robots
+    num_followers = len([robot for robot in env.robots if 'follower' in robot])
+
+    # Define the total size for the datasets
+    total_size = 7 * num_followers  # 7 (6 arm joints + 1 gripper) * number of follower robots
+
+
     t0 = time.time()
     with h5py.File(dataset_path + '.hdf5', 'w', rdcc_nbytes=1024**2*2) as root:
         root.attrs['sim'] = False
@@ -296,10 +326,10 @@ def capture_one_episode(
             else:
                 _ = image.create_dataset(cam_name, (max_timesteps, 480, 640, 3), dtype='uint8',
                                          chunks=(1, 480, 640, 3), )
-        _ = obs.create_dataset('qpos', (max_timesteps, 14))
-        _ = obs.create_dataset('qvel', (max_timesteps, 14))
-        _ = obs.create_dataset('effort', (max_timesteps, 14))
-        _ = root.create_dataset('action', (max_timesteps, 14))
+        _ = obs.create_dataset('qpos', (max_timesteps, total_size))
+        _ = obs.create_dataset('qvel', (max_timesteps, total_size))
+        _ = obs.create_dataset('effort', (max_timesteps, total_size))
+        _ = root.create_dataset('action', (max_timesteps, total_size))
         if IS_MOBILE:
             _ = root.create_dataset('base_action', (max_timesteps, 2))
 
@@ -323,6 +353,8 @@ def main(args: dict):
     camera_names = task_config['camera_names']
     torque_base = args.get('enable_base_torque', False)
     gravity_compensation = args.get('gravity_compensation', False)
+    config = load_yaml_file()
+
 
     if args['episode_idx'] is not None:
         episode_idx = args['episode_idx']
@@ -336,12 +368,12 @@ def main(args: dict):
         is_healthy = capture_one_episode(
             DT,
             max_timesteps,
-            camera_names,
             dataset_dir,
             dataset_name,
             overwrite,
             torque_base,
             gravity_compensation,
+            config
         )
         if is_healthy:
             break

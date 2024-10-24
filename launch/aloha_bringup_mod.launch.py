@@ -22,6 +22,8 @@ from launch.substitutions import (
     EnvironmentVariable,
     LaunchConfiguration,
     PathJoinSubstitution,
+    FindExecutable,
+    Command,
 )
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -33,19 +35,11 @@ def load_yaml_file(yaml_path):
     with open(yaml_path, 'r') as f:
         return yaml.safe_load(f)
 
-from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
-from launch.substitutions import PathJoinSubstitution
-
-
-
-
 
 def launch_setup(context, *args, **kwargs):
 
     
     print("Launch Setup")
-    is_mobile = LaunchConfiguration('is_mobile').perform(context).lower() == 'true'
 
     nodes = []
 
@@ -91,7 +85,15 @@ def launch_setup(context, *args, **kwargs):
                 leader['motor_configs'],
             ]),
             'use_rviz': 'false',
-            'robot_description': descriptions[leader['name']],
+            'robot_description': Command([
+                    FindExecutable(name='xacro'), ' ',
+                    PathJoinSubstitution([
+                        FindPackageShare('interbotix_xsarm_descriptions'),
+                        'urdf',
+                        f'{leader["model"]}.urdf.xacro',
+                    ]), ' ',
+                    'robot_name:=', leader['name']
+                ])
         }.items(),
         condition=IfCondition(LaunchConfiguration('launch_leaders')),
     )
@@ -131,29 +133,37 @@ def launch_setup(context, *args, **kwargs):
     for follower in config.get('follower_arms', []):
         # Launch follower arm node
         xsarm_control_follower_launch_include = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            PathJoinSubstitution([
-                FindPackageShare('interbotix_xsarm_control'),
-                'launch',
-                'xsarm_control.launch.py'
-            ])
-        ]),
-        launch_arguments={
-            'robot_model': follower['model'],
-            'robot_name': follower['name'],
-            'mode_configs': PathJoinSubstitution([
-                FindPackageShare('aloha'),
-                'config',
-                follower['modes'],
+            PythonLaunchDescriptionSource([
+                PathJoinSubstitution([
+                    FindPackageShare('interbotix_xsarm_control'),
+                    'launch',
+                    'xsarm_control.launch.py'
+                ])
             ]),
-            'motor_configs': PathJoinSubstitution([
-                FindPackageShare('interbotix_xsarm_control'),
-                'config',
-                follower['motor_configs'],
-            ]),
-            'use_rviz': 'false',
-            'robot_description': descriptions[follower['name']],
-        }.items(),
+            launch_arguments={
+                'robot_model': follower['model'],
+                'robot_name': follower['name'],
+                'mode_configs': PathJoinSubstitution([
+                    FindPackageShare('aloha'),
+                    'config',
+                    follower['modes'],
+                ]),
+                'motor_configs': PathJoinSubstitution([
+                    FindPackageShare('interbotix_xsarm_control'),
+                    'config',
+                    follower['motor_configs'],
+                ]),
+                'use_rviz': 'false',
+                'robot_description': Command([
+                    FindExecutable(name='xacro'), ' ',
+                    PathJoinSubstitution([
+                        FindPackageShare('interbotix_xsarm_descriptions'),
+                        'urdf',
+                        f'{follower["model"]}.urdf.xacro',
+                    ]), ' ',
+                    'robot_name:=', follower['name']
+                ])
+            }.items(),
         )
         nodes.append(xsarm_control_follower_launch_include)
 
@@ -278,9 +288,8 @@ def launch_setup(context, *args, **kwargs):
         '\nBringing up ALOHA with the following launch configurations: ',
         '\n- launch_leaders: ', LaunchConfiguration('launch_leaders'),
         '\n- use_cameras: ', LaunchConfiguration('use_cameras'),
-        '\n- is_mobile: ', LaunchConfiguration('is_mobile'),
-        '\n- use_base: ', LaunchConfiguration('use_base'),
-        '\n- use_joystick_teleop: ', LaunchConfiguration('use_joystick_teleop'),
+        # '\n- is_mobile: ', base_enabled,
+
     ])
 
     
@@ -306,98 +315,13 @@ def generate_launch_description():
             default_value=PathJoinSubstitution([
                 FindPackageShare('aloha'),
                 'config',
-                'aloha_solo.yaml'
+                'aloha_static.yaml'
             ]),
             description='Path to the robot configuration YAML file'
         )
     )
 
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'robot_model_leader',
-            default_value='aloha_wx250s',
-            description='model type of the leader arms.'
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'robot_model_follower',
-            default_value='aloha_vx300s',
-            description='model type of the follower arms.'
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'robot_name_leader_left',
-            default_value='leader_left',
-            description='name of the left leader arm',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'robot_name_leader_right',
-            default_value='leader_right',
-            description='name of the right leader arm',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'robot_name_follower_left',
-            default_value='follower_left',
-            description='name of the left follower arm',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'robot_name_follower_right',
-            default_value='follower_right',
-            description='name of the right follower arm',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'leader_modes_left',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('aloha'),
-                'config',
-                'leader_modes_left.yaml',
-            ]),
-            description="the file path to the 'mode config' YAML file for the left leader arm.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'leader_modes_right',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('aloha'),
-                'config',
-                'leader_modes_right.yaml',
-            ]),
-            description="the file path to the 'mode config' YAML file for the right leader arm.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'follower_modes_left',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('aloha'),
-                'config',
-                'follower_modes_left.yaml',
-            ]),
-            description="the file path to the 'mode config' YAML file for the left follower arm.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'follower_modes_right',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('aloha'),
-                'config',
-                'follower_modes_right.yaml',
-            ]),
-            description="the file path to the 'mode config' YAML file for the right follower arm.",
-        )
-    )
+    
     declared_arguments.append(
         DeclareLaunchArgument(
             'launch_leaders',
@@ -417,57 +341,7 @@ def generate_launch_description():
             description='if `true`, launches the camera drivers.',
         )
     )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'cam_high_name',
-            default_value='cam_high',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'cam_low_name',
-            default_value='cam_low',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'cam_left_wrist_name',
-            default_value='cam_left_wrist',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'cam_right_wrist_name',
-            default_value='cam_right_wrist',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'is_mobile',
-            default_value=EnvironmentVariable(
-                name='INTERBOTIX_ALOHA_IS_MOBILE',
-                default_value='true',
-            ),
-            choices=('true', 'false'),
-            description='',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'use_base',
-            default_value=LaunchConfiguration('is_mobile'),
-            choices=('true', 'false'),
-            description='if `true`, launches the driver for the SLATE base',
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'use_joystick_teleop',
-            default_value=LaunchConfiguration('use_base'),
-            choices=('true', 'false'),
-            description='if `true`, launches a joystick teleop node for the base',
-        )
-    )
+    
     declared_arguments.append(
         DeclareLaunchArgument(
             'use_aloha_rviz',
@@ -485,43 +359,6 @@ def generate_launch_description():
             ]),
         )
     )
-    declared_arguments.extend(
-        declare_interbotix_xsarm_robot_description_launch_arguments(
-            robot_description_launch_config_name='robot_description_leader_left',
-            robot_model_launch_config_name='robot_model_leader',
-            robot_name_launch_config_name='robot_name_leader_left',
-            base_link_frame='base_link',
-            use_world_frame='false',
-        )
-    )
-    declared_arguments.extend(
-        declare_interbotix_xsarm_robot_description_launch_arguments(
-            robot_description_launch_config_name='robot_description_leader_right',
-            robot_model_launch_config_name='robot_model_leader',
-            robot_name_launch_config_name='robot_name_leader_right',
-            base_link_frame='base_link',
-            use_world_frame='false',
-        )
-    )
-    declared_arguments.extend(
-        declare_interbotix_xsarm_robot_description_launch_arguments(
-            robot_description_launch_config_name='robot_description_follower_left',
-            robot_model_launch_config_name='robot_model_follower',
-            robot_name_launch_config_name='robot_name_follower_left',
-            base_link_frame='base_link',
-            use_world_frame='false',
-        )
-    )
-    declared_arguments.extend(
-        declare_interbotix_xsarm_robot_description_launch_arguments(
-            robot_description_launch_config_name='robot_description_follower_right',
-            robot_model_launch_config_name='robot_model_follower',
-            robot_name_launch_config_name='robot_name_follower_right',
-            base_link_frame='base_link',
-            use_world_frame='false',
-        )
-    )
-
     declared_arguments.append(
         DeclareLaunchArgument(
             'use_gravity_compensation',
@@ -530,29 +367,6 @@ def generate_launch_description():
             description='if `true`, launches the gravity compensation node',
         )
     )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'leader_motor_specs_left',
-            default_value=[
-                PathJoinSubstitution([
-                    FindPackageShare('aloha'),
-                    'config',
-                    'leader_motor_specs_left.yaml'])
-            ],
-            description="the file path to the 'motor specs' YAML file for the left leader arm.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'leader_motor_specs_right',
-            default_value=[
-                PathJoinSubstitution([
-                    FindPackageShare('aloha'),
-                    'config',
-                    'leader_motor_specs_right.yaml'])
-            ],
-            description="the file path to the 'motor specs' YAML file for the right leader arm.",
-        )
-    )
+   
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])

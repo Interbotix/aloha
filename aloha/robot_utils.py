@@ -17,43 +17,47 @@ import numpy as np
 from rclpy.node import Node
 from sensor_msgs.msg import Image, JointState
 
-
 class ImageRecorder:
     def __init__(
         self,
-        is_mobile: bool = IS_MOBILE,
+        config: dict,
         is_debug: bool = False,
         node: Node = None,
     ):
         self.is_debug = is_debug
         self.bridge = CvBridge()
 
-        if is_mobile:
-            self.camera_names = ['cam_high', 'cam_left_wrist', 'cam_right_wrist']
-        else:
-            self.camera_names = ['cam_high', 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
+        # Get camera names from config dictionary
+        self.camera_names = [camera['name'] for camera in config.get('cameras', {}).get('camera_instances', [])]
 
+
+        # Dynamically create attributes and subscriptions for each camera
         for cam_name in self.camera_names:
             setattr(self, f'{cam_name}_image', None)
             setattr(self, f'{cam_name}_secs', None)
             setattr(self, f'{cam_name}_nsecs', None)
-            if cam_name == 'cam_high':
-                callback_func = self.image_cb_cam_high
-            elif cam_name == 'cam_low':
-                callback_func = self.image_cb_cam_low
-            elif cam_name == 'cam_left_wrist':
-                callback_func = self.image_cb_cam_left_wrist
-            elif cam_name == 'cam_right_wrist':
-                callback_func = self.image_cb_cam_right_wrist
-            else:
-                raise NotImplementedError
+
+            # Create appropriate callback dynamically
+            callback_func = self.create_callback(cam_name)
+
+            # Subscribe to the camera topic
             topic = COLOR_IMAGE_TOPIC_NAME.format(cam_name)
             node.create_subscription(Image, topic, callback_func, 20)
+
+            # If in debug mode, create a deque to store timestamps
             if self.is_debug:
                 setattr(self, f'{cam_name}_timestamps', deque(maxlen=50))
+
         time.sleep(0.5)
 
+    def create_callback(self, cam_name: str):
+        """Creates a callback function dynamically for a given camera name."""
+        def callback(data: Image):
+            self.image_cb(cam_name, data)
+        return callback
+
     def image_cb(self, cam_name: str, data: Image):
+        """Handles the incoming image data for the specified camera."""
         setattr(
             self,
             f'{cam_name}_image',
@@ -61,43 +65,34 @@ class ImageRecorder:
         )
         setattr(self, f'{cam_name}_secs', data.header.stamp.sec)
         setattr(self, f'{cam_name}_nsecs', data.header.stamp.nanosec)
+
         if self.is_debug:
             getattr(
                 self,
                 f'{cam_name}_timestamps'
             ).append(data.header.stamp.sec + data.header.stamp.sec * 1e-9)
 
-    def image_cb_cam_high(self, data):
-        cam_name = 'cam_high'
-        return self.image_cb(cam_name, data)
-
-    def image_cb_cam_low(self, data):
-        cam_name = 'cam_low'
-        return self.image_cb(cam_name, data)
-
-    def image_cb_cam_left_wrist(self, data):
-        cam_name = 'cam_left_wrist'
-        return self.image_cb(cam_name, data)
-
-    def image_cb_cam_right_wrist(self, data):
-        cam_name = 'cam_right_wrist'
-        return self.image_cb(cam_name, data)
-
     def get_images(self):
+        """Returns a dictionary of the latest images from all cameras."""
         image_dict = {}
         for cam_name in self.camera_names:
             image_dict[cam_name] = getattr(self, f'{cam_name}_image')
         return image_dict
 
     def print_diagnostics(self):
+        """Prints diagnostic information such as image frequency for each camera."""
         def dt_helper(ts):
             ts = np.array(ts)
             diff = ts[1:] - ts[:-1]
             return np.mean(diff)
+        
         for cam_name in self.camera_names:
-            image_freq = 1 / dt_helper(getattr(self, f'{cam_name}_timestamps'))
-            print(f'{cam_name} {image_freq=:.2f}')
+            timestamps = getattr(self, f'{cam_name}_timestamps', [])
+            if timestamps:
+                image_freq = 1 / dt_helper(timestamps)
+                print(f'{cam_name} {image_freq=:.2f}')
         print()
+
 
 
 class Recorder:

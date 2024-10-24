@@ -5,7 +5,8 @@ import os
 ### Task parameters
 
 # Set to 'true' for Mobile ALOHA, 'false' for Stationary ALOHA
-IS_MOBILE = os.environ.get('INTERBOTIX_ALOHA_IS_MOBILE', 'true').lower() == 'true'
+# IS_MOBILE = os.environ.get('INTERBOTIX_ALOHA_IS_MOBILE', 'true').lower() == 'true'
+IS_MOBILE = False
 
 # # RealSense cameras image topic (realsense2_camera v4.54)
 # COLOR_IMAGE_TOPIC_NAME = '{}/color/image_rect_raw'
@@ -112,7 +113,14 @@ TASK_CONFIGS = {
 
     'aloha_stationary_dummy':{
         'dataset_dir': DATA_DIR + '/aloha_stationary_dummy',
-        'episode_len': 800,
+        'episode_len': 500,
         'camera_names': ['cam_high', 'cam_left_wrist', 'cam_right_wrist']
     },
+
+    'aloha_solo_dummy':{
+        'dataset_dir': DATA_DIR + '/aloha_stationary_dummy',
+        'episode_len': 500,
+        'camera_names': ['cam_high', 'cam_left_wrist', 'cam_right_wrist']
+    },
+
 }

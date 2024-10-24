@@ -30,7 +30,7 @@ import rclpy
 import yaml
 
 
-def load_yaml_file(yaml_path="../config/aloha_solo.yaml"):
+def load_yaml_file(yaml_path="../config/aloha_static.yaml"):
     # Function to read and parse the YAML file
     with open(yaml_path, 'r') as f:
         return yaml.safe_load(f)
