@@ -16,7 +16,7 @@
 $(var cam_high_name):
   camera:
     ros__parameters:
-      serial_no: ""
+      serial_no: "128422271347"
 
 $(var cam_low_name):
   camera:
@@ -26,7 +26,7 @@ $(var cam_low_name):
 $(var cam_right_wrist_name):
   camera:
     ros__parameters:
-      serial_no: ""
+      serial_no: "130322272300"
 
 $(var cam_left_wrist_name):
   camera:
