@@ -51,7 +51,7 @@ def opening_ceremony(
     )
     leader_bot_right.core.robot_set_operating_modes('group', 'arm', 'position')
     leader_bot_right.core.robot_set_operating_modes('single', 'gripper', 'position')
-    follower_bot_left.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
+    follower_bot_right.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
 
     torque_on(follower_bot_left)
     torque_on(leader_bot_left)
