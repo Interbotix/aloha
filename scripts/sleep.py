@@ -13,13 +13,23 @@ from interbotix_common_modules.common_robot.robot import (
     robot_startup,
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
+import os
 
 
-def load_yaml_file(yaml_path):
-    # Function to read and parse the YAML file
-    with open(yaml_path, 'r') as f:
-        return yaml.safe_load(f)
+def load_yaml_file(robot_base="aloha_static"):
 
+    
+    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
+
+    if not os.path.exists(yaml_file_path):
+        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
+    
+    try:
+        with open(yaml_file_path, 'r') as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        raise RuntimeError(f"Failed to load YAML file: {e}")
+    
 
 def main():
     # Parse command-line arguments
@@ -34,14 +44,19 @@ def main():
         default=False,
     )
     argparser.add_argument(
-        '-y', '--yaml', 
-        help='Path to YAML configuration file',
-        required=True
+        '-r', '--robot',
+        choices=['aloha_solo', 'aloha_static', 'aloha_mobile'],
+        required=True,
+        help='Specify the robot configuration to use: aloha_solo, aloha_static, or aloha_mobile.'
     )
+
     args = argparser.parse_args()
 
-    # Load robot configuration from YAML file
-    config = load_yaml_file(args.yaml)
+
+    robot_base = args.robot
+
+    config = load_yaml_file(robot_base)
+    
 
     # Create a global ROS node
     node = create_interbotix_global_node('aloha')

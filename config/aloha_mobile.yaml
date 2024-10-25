@@ -1,5 +1,4 @@
-robot_name: aloha_static
-
+robot_name: aloha_solo
 leader_arms:
   - name: leader_right
     model: aloha_wx250s
@@ -42,17 +41,17 @@ cameras:
     enable_infra2: false
 
   camera_instances:
-    - name: camera_high_solo
-      serial_no: "130322274102"
+    - name: camera_high
+      topic: /camera_high/camera/image_raw
+      serial_no: "128422270115"
 
     - name: camera_wrist_right
-      serial_no: "130322272300"
+      topic: /camera_wrist_right/camera/image_raw
+      serial_no: "128422271327"
 
     - name: camera_wrist_left
-      serial_no: "218622272670"
+      topic: /camera_wrist_left/camera/image_raw
+      serial_no: "130322271087"
 
-    - name: camera_high_static
-      serial_no: "128422271347"
 
-base: 
-  enable: false
+base: true

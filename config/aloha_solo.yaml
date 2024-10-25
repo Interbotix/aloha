@@ -1,3 +1,4 @@
+robot_name: aloha_solo
 leader_arms:
   - name: leader_solo
     model: aloha_wx250s
@@ -38,5 +39,4 @@ cameras:
       serial_no: "130322272300"
       
 
-base: 
-  enable: false
+base: false

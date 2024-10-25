@@ -32,7 +32,7 @@ from interbotix_common_modules.common_robot.robot import (
 STATE_NAMES = JOINT_NAMES + ['gripper', 'left_finger', 'right_finger']
 
 # Function to load YAML file
-def load_yaml_file(yaml_path='../config/aloha_static.yaml'):
+def load_yaml_file(yaml_path='../config/aloha_mobile.yaml'):
     with open(yaml_path, 'r') as f:
         return yaml.safe_load(f)
 
@@ -40,6 +40,8 @@ def load_yaml_file(yaml_path='../config/aloha_static.yaml'):
 def main(args):
 
     config = load_yaml_file()
+
+    is_mobile = config.get('base', False)
     dataset_dir = args['dataset_dir']
     episode_idx = args['episode_idx']
     dataset_name = f'episode_{episode_idx}'
@@ -51,14 +53,14 @@ def main(args):
 
     with h5py.File(dataset_path, 'r') as root:
         actions = root['/action'][()]
-        if IS_MOBILE:
+        if is_mobile:
             base_actions = root['/base_action'][()]
 
     node = create_interbotix_global_node('aloha')
 
-    env = make_real_env(node, setup_robots=False, setup_base=IS_MOBILE, config=config)
+    env = make_real_env(node, setup_robots=False, setup_base=is_mobile, config=config)
     
-    if IS_MOBILE:
+    if is_mobile:
         env.base.base.set_motor_torque(True)
     robot_startup(node)
 
@@ -78,10 +80,10 @@ def main(args):
 
     time0 = time.time()
     DT = 1 / FPS
-    if IS_MOBILE:
+    if is_mobile:
         for action, base_action in zip(actions, base_actions):
             time1 = time.time()
-            env.step(action, base_action, get_base_vel=True)
+            env.step(action, base_action)
             time.sleep(max(0, DT - (time.time() - time1)))
     else:
         for action in actions:

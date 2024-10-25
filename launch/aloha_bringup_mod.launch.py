@@ -24,6 +24,7 @@ from launch.substitutions import (
     PathJoinSubstitution,
     FindExecutable,
     Command,
+    TextSubstitution,
 )
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -39,15 +40,23 @@ def load_yaml_file(yaml_path):
 def launch_setup(context, *args, **kwargs):
 
     
-    print("Launch Setup")
 
     nodes = []
 
-    # Get the YAML file path from the 'robot' launch argument
-    yaml_file_path = LaunchConfiguration('robot').perform(context)
+    # Get the base name from the 'robot_config_name' launch argument and construct the YAML path
+    robot_config_base = LaunchConfiguration('robot').perform(context)
+    yaml_file_path = PathJoinSubstitution([
+        FindPackageShare('aloha'),
+        'config',
+        TextSubstitution(text=f'{robot_config_base}.yaml')
+    ]).perform(context)
 
     # Load the YAML file
     config = load_yaml_file(yaml_file_path)
+
+    # Retrieve and display the robot_name
+    robot_name = config.get('robot_name', 'Unnamed Robot')
+    print(f"Robot Name: {robot_name}")
 
     descriptions={}
 
@@ -221,7 +230,7 @@ def launch_setup(context, *args, **kwargs):
 
     base_nodes = []
     # Load the base enable flag from the YAML file
-    base_enabled = config.get('base', {}).get('enable', False)
+    base_enabled = config.get('base', False)
 
     # Check if base is enabled in the YAML configuration
     if base_enabled:
@@ -288,7 +297,6 @@ def launch_setup(context, *args, **kwargs):
         '\nBringing up ALOHA with the following launch configurations: ',
         '\n- launch_leaders: ', LaunchConfiguration('launch_leaders'),
         '\n- use_cameras: ', LaunchConfiguration('use_cameras'),
-        # '\n- is_mobile: ', base_enabled,
 
     ])
 
@@ -308,18 +316,13 @@ def generate_launch_description():
     print("Generating Launch Description")
     declared_arguments = []
 
-    # Declare the YAML file argument
     declared_arguments.append(
-        DeclareLaunchArgument(
-            'robot',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('aloha'),
-                'config',
-                'aloha_static.yaml'
-            ]),
-            description='Path to the robot configuration YAML file'
-        )
+    DeclareLaunchArgument(
+        'robot',
+        default_value='aloha_static',
+        description='Name of the robot configuration file (e.g., aloha_static, aloha_solo, aloha_mobile)'
     )
+)
 
     
     declared_arguments.append(

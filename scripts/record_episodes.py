@@ -11,7 +11,6 @@ from aloha.constants import (
     FOLLOWER_GRIPPER_JOINT_CLOSE,
     FOLLOWER_GRIPPER_JOINT_OPEN,
     FPS,
-    IS_MOBILE,
     LEADER_GRIPPER_CLOSE_THRESH,
     LEADER_GRIPPER_JOINT_MID,
     START_ARM_POSE,
@@ -45,11 +44,11 @@ import rclpy
 from tqdm import tqdm
 
 
-IS_MOBILE =False
+
 
 
 # Function to load YAML file
-def load_yaml_file(yaml_path='../config/aloha_static.yaml'):
+def load_yaml_file(yaml_path='../config/aloha_mobile.yaml'):
     with open(yaml_path, 'r') as f:
         return yaml.safe_load(f)
 
@@ -151,6 +150,8 @@ def capture_one_episode(
 ):
     print(f'Dataset name: {dataset_name}')
 
+    IS_MOBILE = config.get('base', False)
+
     node = create_interbotix_global_node('aloha')
 
     env = make_real_env(
@@ -190,7 +191,7 @@ def capture_one_episode(
         t0 = time.time()
         action = get_action(env.robots)
         t1 = time.time()
-        ts = env.step(action, get_base_vel=IS_MOBILE)
+        ts = env.step(action)
         t2 = time.time()
         timesteps.append(ts)
         actions.append(action)
@@ -245,7 +246,7 @@ def capture_one_episode(
         '/observations/effort': [],
         '/action': [],
     }
-    if config.get('base', {}).get('enable', False):
+    if config.get('base', False):
         data_dict['/base_action'] = []
 
     camera_names = [camera['name'] for camera in config.get('cameras', {}).get('camera_instances', [])]
@@ -262,7 +263,7 @@ def capture_one_episode(
         data_dict['/observations/effort'].append(ts.observation['effort'])
         data_dict['/action'].append(action)
 
-        if config.get('base', {}).get('enable', False):
+        if config.get('base', False):
             data_dict['/base_action'].append(ts.observation['base_vel'])
 
         for cam_name in camera_names:
@@ -353,6 +354,7 @@ def main(args: dict):
     camera_names = task_config['camera_names']
     torque_base = args.get('enable_base_torque', False)
     gravity_compensation = args.get('gravity_compensation', False)
+
     config = load_yaml_file()
 
 

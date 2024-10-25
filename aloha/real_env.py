@@ -1,4 +1,6 @@
 import collections
+import importlib
+
 import time
 
 from aloha.constants import (
@@ -21,7 +23,6 @@ from aloha.robot_utils import (
     setup_leader_bot,
 )
 
-IS_MOBILE = False
 import dm_env
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -29,8 +30,7 @@ from interbotix_common_modules.common_robot.robot import (
     InterbotixRobotNode,
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
-# if IS_MOBILE:
-#     from interbotix_xs_modules.xs_robot.slate import InterbotixSlate
+
 from interbotix_xs_msgs.msg import JointSingleCommand
 import matplotlib.pyplot as plt
 import numpy as np
@@ -73,7 +73,6 @@ class RealEnv:
         node: InterbotixRobotNode,
         setup_robots: bool = True,
         setup_base: bool = False,
-        is_mobile: bool = IS_MOBILE,
         torque_base: bool = False,
         config: dict = None
     ):
@@ -88,7 +87,14 @@ class RealEnv:
             True. Only applies when IS_MOBILE is True
         :raises ValueError: On providing False for setup_base but the robot is not mobile
         """
-
+        self.is_mobile = config.get('base',False)
+        print(f"IS MObile is {self.is_mobile}")
+        # Dynamically import module based on config value
+        if self.is_mobile:
+            print("Importing Slate")
+            xs_robot_module = importlib.import_module('interbotix_xs_modules.xs_robot.slate')
+            self.InterbotixSlate = getattr(xs_robot_module, 'InterbotixSlate')
+        
         # Dictionary to store the robot instances
         self.robots = {}
 
@@ -112,6 +118,8 @@ class RealEnv:
                 iterative_update_fk=False,
             )
 
+        self.is_mobile = config.get('base', False)
+
         self.image_recorder = ImageRecorder(node=node, config=config)
         self.gripper_command = JointSingleCommand(name='gripper')
 
@@ -119,7 +127,7 @@ class RealEnv:
             self.setup_robots()
 
         if setup_base:
-            if is_mobile:
+            if self.is_mobile:
                 self.setup_base(node, torque_base)
             else:
                 raise ValueError((
@@ -133,7 +141,7 @@ class RealEnv:
         :param node: The InterbotixRobotNode to build the SLATE base module on
         :param torque_enable: True to torque the base on setup, defaults to False
         """
-        self.base = InterbotixSlate(
+        self.base = self.InterbotixSlate(
             'aloha',
             node=node,
         )
@@ -257,13 +265,13 @@ class RealEnv:
         )
 
 
-    def get_observation(self, get_base_vel=IS_MOBILE):
+    def get_observation(self):
         obs = collections.OrderedDict()
         obs['qpos'] = self.get_qpos()
         obs['qvel'] = self.get_qvel()
         obs['effort'] = self.get_effort()
         obs['images'] = self.get_images()
-        if get_base_vel:
+        if self.is_mobile:
             obs['base_vel'] = self.get_base_vel()
         return obs
 
@@ -285,7 +293,7 @@ class RealEnv:
             observation=self.get_observation(),
         )
     
-    def step(self, action, base_action=None, get_base_vel=False, get_obs=True):
+    def step(self, action,base_action=None, get_obs=True):
         follower_bots = {name: robot for name, robot in self.robots.items() if 'follower' in name}
         
         state_len = int(len(action) / len(follower_bots))  # Dynamically calculate per-bot state length
@@ -298,13 +306,13 @@ class RealEnv:
             self.set_gripper_pose(name, bot_action[-1])  # Set gripper position
             index += state_len
 
-        # If there's a base action, apply it to the mobile base
+
         if base_action is not None:
             base_action_linear, base_action_angular = base_action
             self.base.base.command_velocity_xyaw(x=base_action_linear, yaw=base_action_angular)
 
         # Optionally get observations
-        obs = self.get_observation(get_base_vel) if get_obs else None
+        obs = self.get_observation() if get_obs else None
         
         return dm_env.TimeStep(
             step_type=dm_env.StepType.MID,
@@ -346,7 +354,6 @@ def make_real_env(
         node=node,
         setup_robots=setup_robots,
         setup_base=setup_base,
-        is_mobile=IS_MOBILE,
         torque_base=torque_base,
         config = config
     )

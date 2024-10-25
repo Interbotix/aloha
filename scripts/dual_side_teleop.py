@@ -27,13 +27,25 @@ from interbotix_common_modules.common_robot.robot import (
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
 import rclpy
+import os
 import yaml
 
 
-def load_yaml_file(yaml_path="../config/aloha_static.yaml"):
-    # Function to read and parse the YAML file
-    with open(yaml_path, 'r') as f:
-        return yaml.safe_load(f)
+def load_yaml_file(robot_base="aloha_static"):
+
+    
+    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
+
+    if not os.path.exists(yaml_file_path):
+        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
+    
+    try:
+        with open(yaml_file_path, 'r') as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        raise RuntimeError(f"Failed to load YAML file: {e}")
+    
+    
     
 def opening_ceremony(robots: dict) -> None:
     """Move all leader-follower pairs of robots to a starting pose for demonstration."""
@@ -128,7 +140,14 @@ def main(args: dict) -> None:
 
     node = create_interbotix_global_node('aloha')
 
-    config = load_yaml_file()
+    robot_base = args.get('robot', '')
+
+    config = load_yaml_file(robot_base)
+
+    # Retrieve and display the robot_name
+    robot_name = config.get('robot_name', 'Unnamed Robot')
+    print(f"Robot Name: {robot_name}")
+    
     # Dictionary to hold the dynamically created robot instances
     robots = {}
 
@@ -199,4 +218,13 @@ if __name__ == '__main__':
         action='store_true',
         help='If set, gravity compensation will be enabled for the leader robots when teleop starts.',
     )
+
+    # Add robot configuration argument
+    parser.add_argument(
+        '-r', '--robot',
+        choices=['aloha_solo', 'aloha_static', 'aloha_mobile'],
+        required=True,
+        help='Specify the robot configuration to use: aloha_solo, aloha_static, or aloha_mobile.'
+    )
+
     main(vars(parser.parse_args()))
