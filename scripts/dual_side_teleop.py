@@ -149,7 +149,6 @@ def main(args: dict) -> None:
 
     # Retrieve and display the robot_name
     robot_name = config.get('robot_name', 'Unnamed Robot')
-    print(f"Robot Name: {robot_name}")
     
     # Dictionary to hold the dynamically created robot instances
     robots = {}

@@ -2,20 +2,19 @@ import argparse
 import os
 
 from aloha.robot_utils import (
-    DT,
     JOINT_NAMES,
 )
 import cv2
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-
+import yaml
 
 STATE_NAMES = JOINT_NAMES + ['gripper']
 BASE_STATE_NAMES = ['linear_vel', 'angular_vel']
 
 
-def load_hdf5(dataset_dir, dataset_name):
+def load_hdf5(dataset_dir, dataset_name, IS_MOBILE):
     dataset_path = os.path.join(dataset_dir, dataset_name + '.hdf5')
     if not os.path.isfile(dataset_path):
         print(f'Dataset does not exist at \n{dataset_path}\n')
@@ -57,16 +56,33 @@ def load_hdf5(dataset_dir, dataset_name):
     return qpos, qvel, effort, action, base_action, image_dict
 
 
+def load_yaml_file(yaml_path='../config/aloha_mobile.yaml'):
+    with open(yaml_path, 'r') as f:
+        return yaml.safe_load(f)
+
+
 def main(args):
     dataset_dir = args['dataset_dir']
     episode_idx = args['episode_idx']
+    robot_base = args['robot']
+
+    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
+
+    if not os.path.exists(yaml_file_path):
+        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
+
+    config = load_yaml_file(yaml_file_path)
+
+    IS_MOBILE = config.get('base', False)
+    DT = 1/config.get('fps', 50)
+
     ismirror = args['ismirror']
     if ismirror:
         dataset_name = f'mirror_episode_{episode_idx}'
     else:
         dataset_name = f'episode_{episode_idx}'
 
-    qpos, _, _, action, base_action, image_dict = load_hdf5(dataset_dir, dataset_name)
+    qpos, _, _, action, base_action, image_dict = load_hdf5(dataset_dir, dataset_name, IS_MOBILE)
     print('hdf5 loaded!')
     save_videos(
         image_dict,
@@ -261,5 +277,13 @@ if __name__ == '__main__':
         help='Episode index.',
         required=False,
     )
+
+    parser.add_argument(
+        '-r', '--robot',
+        choices=['aloha_solo', 'aloha_static', 'aloha_mobile'],
+        required=True,
+        help='Specify the robot configuration to use: aloha_solo, aloha_static, or aloha_mobile.'
+    )
+
     parser.add_argument('--ismirror', action='store_true')
     main(vars(parser.parse_args()))
