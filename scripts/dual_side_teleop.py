@@ -2,14 +2,6 @@
 
 import argparse
 from typing import Sequence
-from aloha.constants import (
-    DT_DURATION,
-    FOLLOWER_GRIPPER_JOINT_CLOSE,
-    LEADER2FOLLOWER_JOINT_FN,
-    LEADER_GRIPPER_CLOSE_THRESH,
-    LEADER_GRIPPER_JOINT_MID,
-    START_ARM_POSE,
-)
 from aloha.robot_utils import (
     enable_gravity_compensation,
     get_arm_gripper_positions,
@@ -17,7 +9,13 @@ from aloha.robot_utils import (
     move_grippers,
     torque_off,
     torque_on,
-)
+    FOLLOWER_GRIPPER_JOINT_CLOSE,
+    LEADER2FOLLOWER_JOINT_FN,
+    LEADER_GRIPPER_CLOSE_THRESH,
+    LEADER_GRIPPER_JOINT_MID,
+    START_ARM_POSE,
+    )
+
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
     get_interbotix_global_node,
@@ -29,6 +27,9 @@ from interbotix_xs_msgs.msg import JointSingleCommand
 import rclpy
 import os
 import yaml
+
+from rclpy.duration import Duration
+from rclpy.constants import S_TO_NS
 
 
 def load_yaml_file(robot_base="aloha_static"):
@@ -104,7 +105,7 @@ def opening_ceremony(robots: dict) -> None:
         )
 
 
-def press_to_start(robots: dict, gravity_compensation: bool) -> None:
+def press_to_start(robots: dict,config: dict, gravity_compensation: bool) -> None:
     """Wait for the user to close the grippers on all leader robots to start."""
     
     # Extract leader bots from the robots dictionary
@@ -123,6 +124,8 @@ def press_to_start(robots: dict, gravity_compensation: bool) -> None:
             get_arm_gripper_positions(leader_bot) < LEADER_GRIPPER_CLOSE_THRESH
             for leader_bot in leader_bots.values()
         )
+        DT = 1/config.get('fps', 50)
+        DT_DURATION = Duration(seconds=0, nanoseconds=DT * S_TO_NS)
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
 
     # Enable gravity compensation or turn off torque based on the parameter
@@ -178,7 +181,7 @@ def main(args: dict) -> None:
         robots
     )
     
-    press_to_start(robots, gravity_compensation)
+    press_to_start(robots, config,  gravity_compensation)
     # Teleoperation loop
     # Define gripper command objects for each follower
     gripper_commands = {
@@ -206,12 +209,15 @@ def main(args: dict) -> None:
                     follower_bot.gripper.core.pub_single.publish(gripper_command)
 
         # Sleep for the DT duration
+        DT = 1/config.get('fps', 50)
+        DT_DURATION = Duration(seconds=0, nanoseconds=DT * S_TO_NS)
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
 
     robot_shutdown(node)
 
 
 if __name__ == '__main__':
+    print("Testing FPS")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-g', '--gravity_compensation',

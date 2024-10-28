@@ -4,17 +4,13 @@ import argparse
 import os
 import time
 
-from aloha.constants import (
-    FOLLOWER_GRIPPER_JOINT_OPEN,
-    FPS,
-    IS_MOBILE,
-    JOINT_NAMES,
-)
 from aloha.real_env import (
     make_real_env,
 )
 from aloha.robot_utils import (
     move_grippers,
+    JOINT_NAMES,
+    FOLLOWER_GRIPPER_JOINT_OPEN,
 )
 import h5py
 import yaml
@@ -39,7 +35,14 @@ def load_yaml_file(yaml_path='../config/aloha_mobile.yaml'):
 
 def main(args):
 
-    config = load_yaml_file()
+    robot_base = args.get('robot', '')
+
+    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
+
+    if not os.path.exists(yaml_file_path):
+        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
+
+    config = load_yaml_file(yaml_file_path)
 
     is_mobile = config.get('base', False)
     dataset_dir = args['dataset_dir']
@@ -79,7 +82,7 @@ def main(args):
     env.reset()
 
     time0 = time.time()
-    DT = 1 / FPS
+    DT = 1 / config.get('fps',50)
     if is_mobile:
         for action, base_action in zip(actions, base_actions):
             time1 = time.time()
@@ -88,7 +91,7 @@ def main(args):
     else:
         for action in actions:
             time1 = time.time()
-            env.step(action, None, get_base_vel=False)
+            env.step(action, None)
             time.sleep(max(0, DT - (time.time() - time1)))
     print(f'Avg fps: {len(actions) / (time.time() - time0)}')
 
@@ -125,4 +128,13 @@ if __name__ == '__main__':
         default=0,
         required=False,
     )
+
+    parser.add_argument(
+        '-r', '--robot',
+        action='store',
+        type=str,
+        help='Robot Setup.',
+        required=True,
+    )
+
     main(vars(parser.parse_args()))

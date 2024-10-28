@@ -1,9 +1,8 @@
 import argparse
 import os
 
-from aloha.constants import (
+from aloha.robot_utils import (
     DT,
-    IS_MOBILE,
     JOINT_NAMES,
 )
 import cv2

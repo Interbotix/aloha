@@ -3,24 +3,21 @@ import importlib
 
 import time
 
-from aloha.constants import (
-    DT,
+
+from aloha.robot_utils import (
+    ImageRecorder,
+    move_arms,
+    move_grippers,
+    setup_follower_bot,
+    setup_leader_bot,
     FOLLOWER_GRIPPER_JOINT_CLOSE,
     FOLLOWER_GRIPPER_JOINT_OPEN,
     FOLLOWER_GRIPPER_JOINT_UNNORMALIZE_FN,
     FOLLOWER_GRIPPER_POSITION_NORMALIZE_FN,
     FOLLOWER_GRIPPER_VELOCITY_NORMALIZE_FN,
-    IS_MOBILE,
     LEADER_GRIPPER_JOINT_NORMALIZE_FN,
     START_ARM_POSE,
-)
-from aloha.robot_utils import (
-    ImageRecorder,
-    move_arms,
-    move_grippers,
-    Recorder,
-    setup_follower_bot,
-    setup_leader_bot,
+    DT
 )
 
 import dm_env
@@ -293,7 +290,7 @@ class RealEnv:
             observation=self.get_observation(),
         )
     
-    def step(self, action,base_action=None, get_obs=True):
+    def step(self, action, base_action=None, get_obs=True):
         follower_bots = {name: robot for name, robot in self.robots.items() if 'follower' in name}
         
         state_len = int(len(action) / len(follower_bots))  # Dynamically calculate per-bot state length

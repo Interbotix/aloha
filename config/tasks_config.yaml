@@ -1,0 +1,23 @@
+# task_config.yaml
+
+# Real hardware task configurations
+tasks:
+  aloha_mobile_hello_aloha:
+    dataset_dir: "/path/to/your/data/aloha_mobile_hello_aloha"
+    episode_len: 800
+
+  aloha_mobile_dummy:
+    dataset_dir: "/path/to/your/data/aloha_mobile_dummy"
+    episode_len: 1000
+
+  aloha_stationary_hello_aloha:
+    dataset_dir: "/path/to/your/data/aloha_stationary_hello_aloha"
+    episode_len: 800
+
+  aloha_stationary_dummy:
+    dataset_dir: "/path/to/your/data/aloha_stationary_dummy"
+    episode_len: 500
+
+  aloha_solo_dummy:
+    dataset_dir: "~/aloha_data/aloha_solo_dummy"
+    episode_len: 500

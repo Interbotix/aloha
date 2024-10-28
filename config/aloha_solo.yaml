@@ -31,11 +31,9 @@ cameras:
 
   camera_instances:
     - name: camera_high_solo
-      topic: /camera_high/camera/image_raw
       serial_no: "130322274102"
 
     - name: camera_wrist_right
-      topic: /camera_wrist/camera/image_raw
       serial_no: "130322272300"
       
 

@@ -1,4 +1,7 @@
 robot_name: aloha_solo
+
+fps: 50
+
 leader_arms:
   - name: leader_right
     model: aloha_wx250s

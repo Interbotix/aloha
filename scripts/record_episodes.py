@@ -6,16 +6,7 @@ import time
 import yaml
 
 
-from aloha.constants import (
-    DT,
-    FOLLOWER_GRIPPER_JOINT_CLOSE,
-    FOLLOWER_GRIPPER_JOINT_OPEN,
-    FPS,
-    LEADER_GRIPPER_CLOSE_THRESH,
-    LEADER_GRIPPER_JOINT_MID,
-    START_ARM_POSE,
-    TASK_CONFIGS,
-)
+
 from aloha.real_env import (
     get_action,
     make_real_env
@@ -27,9 +18,13 @@ from aloha.robot_utils import (
     ImageRecorder,
     move_arms,
     move_grippers,
-    Recorder,
     torque_off,
     torque_on,
+    LEADER_GRIPPER_CLOSE_THRESH,
+    LEADER_GRIPPER_JOINT_MID,
+    START_ARM_POSE,
+    FOLLOWER_GRIPPER_JOINT_CLOSE,
+    FOLLOWER_GRIPPER_JOINT_OPEN,
 )
 import cv2
 import h5py
@@ -53,7 +48,7 @@ def load_yaml_file(yaml_path='../config/aloha_mobile.yaml'):
         return yaml.safe_load(f)
 
 
-def opening_ceremony(robots: dict, gravity_compensation: bool) -> None:
+def opening_ceremony(robots: dict, gravity_compensation: bool, dt: float) -> None:
     """Move all leader-follower pairs of robots to a starting pose for demonstration."""
     # Separate leader and follower robots
     leader_bots = {name: bot for name, bot in robots.items() if 'leader' in name}
@@ -126,7 +121,7 @@ def opening_ceremony(robots: dict, gravity_compensation: bool) -> None:
             get_arm_gripper_positions(leader_bot) < LEADER_GRIPPER_CLOSE_THRESH
             for leader_bot in leader_bots.values()
         )
-        time.sleep(DT/10)
+        time.sleep(dt/10)
     # Enable gravity compensation or turn off torque based on the parameter
     for leader_name, leader_bot in leader_bots.items():
         if gravity_compensation:
@@ -139,7 +134,6 @@ def opening_ceremony(robots: dict, gravity_compensation: bool) -> None:
 
 
 def capture_one_episode(
-    dt,
     max_timesteps,
     dataset_dir,
     dataset_name,
@@ -172,11 +166,14 @@ def capture_one_episode(
         print(f'Dataset already exist at \n{dataset_path}\nHint: set overwrite to True.')
         exit()
 
+
+    DT = 1 / config.get('fps',50)
     # move all 4 robots to a starting pose where it is easy to start teleoperation, then wait till
     # both gripper closed
     opening_ceremony(
         env.robots,
         gravity_compensation=gravity_compensation,
+        dt=DT
     )
 
     # Data collection
@@ -186,7 +183,7 @@ def capture_one_episode(
     actions = []
     actual_dt_history = []
     time0 = time.time()
-    DT = 1 / FPS
+    
     for t in tqdm(range(max_timesteps)):
         t0 = time.time()
         action = get_action(env.robots)
@@ -348,15 +345,24 @@ def capture_one_episode(
 
 
 def main(args: dict):
-    task_config = TASK_CONFIGS[args['task_name']]
-    dataset_dir = task_config['dataset_dir']
-    max_timesteps = task_config['episode_len']
-    camera_names = task_config['camera_names']
+
+    print("REmoving DT")
+
+    task_config = load_yaml_file('../config/tasks_config.yaml')
+    task = task_config['tasks'].get(args.get('task_name'))
+    dataset_dir = task.get('dataset_dir')
+    max_timesteps = task.get('episode_len')
     torque_base = args.get('enable_base_torque', False)
     gravity_compensation = args.get('gravity_compensation', False)
 
-    config = load_yaml_file()
+    robot_base = args.get('robot', '')
 
+    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
+
+    if not os.path.exists(yaml_file_path):
+        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
+    
+    config = load_yaml_file(yaml_file_path)
 
     if args['episode_idx'] is not None:
         episode_idx = args['episode_idx']
@@ -368,7 +374,6 @@ def main(args: dict):
     print(dataset_name + '\n')
     while True:
         is_healthy = capture_one_episode(
-            DT,
             max_timesteps,
             dataset_dir,
             dataset_name,
@@ -422,7 +427,7 @@ def debug():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--task_name',
+        '-t', '--task_name',
         action='store',
         type=str,
         help='Task name.',
@@ -448,5 +453,12 @@ if __name__ == '__main__':
         '-g', '--gravity_compensation',
         action='store_true',
         help='If set, gravity compensation will be enabled for the leader robots when teleop starts.',
+    )
+    parser.add_argument(
+        '-r', '--robot',
+        action='store',
+        type=str,
+        help='Robot Setup.',
+        required=True,
     )
     main(vars(parser.parse_args()))

@@ -1,12 +1,8 @@
 from collections import deque
 import time
 from typing import Sequence
+import os
 
-from aloha.constants import (
-    COLOR_IMAGE_TOPIC_NAME,
-    DT,
-    IS_MOBILE,
-)
 from cv_bridge import CvBridge
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_modules.xs_robot.gravity_compensation import (
@@ -93,76 +89,6 @@ class ImageRecorder:
                 print(f'{cam_name} {image_freq=:.2f}')
         print()
 
-
-
-class Recorder:
-    def __init__(
-        self,
-        side: str,
-        is_debug: bool = False,
-        node: Node = None,
-    ):
-        self.secs = None
-        self.nsecs = None
-        self.qpos = None
-        self.effort = None
-        self.arm_command = None
-        self.gripper_command = None
-        self.is_debug = is_debug
-
-        node.create_subscription(
-            JointState,
-            f'/follower_{side}/joint_states',
-            self.follower_state_cb,
-            10,
-        )
-        node.create_subscription(
-            JointGroupCommand,
-            f'/follower_{side}/commands/joint_group',
-            self.follower_arm_commands_cb,
-            10,
-        )
-        node.create_subscription(
-            JointSingleCommand,
-            f'/follower_{side}/commands/joint_single',
-            self.follower_gripper_commands_cb,
-            10,
-        )
-        if self.is_debug:
-            self.joint_timestamps = deque(maxlen=50)
-            self.arm_command_timestamps = deque(maxlen=50)
-            self.gripper_command_timestamps = deque(maxlen=50)
-        time.sleep(0.1)
-
-    def follower_state_cb(self, data: JointState):
-        self.qpos = data.position
-        self.qvel = data.velocity
-        self.effort = data.effort
-        self.data = data
-        if self.is_debug:
-            self.joint_timestamps.append(time.time())
-
-    def follower_arm_commands_cb(self, data: JointGroupCommand):
-        self.arm_command = data.cmd
-        if self.is_debug:
-            self.arm_command_timestamps.append(time.time())
-
-    def follower_gripper_commands_cb(self, data: JointSingleCommand):
-        self.gripper_command = data.cmd
-        if self.is_debug:
-            self.gripper_command_timestamps.append(time.time())
-
-    def print_diagnostics(self):
-        def dt_helper(ts):
-            ts = np.array(ts)
-            diff = ts[1:] - ts[:-1]
-            return np.mean(diff)
-
-        joint_freq = 1 / dt_helper(self.joint_timestamps)
-        arm_command_freq = 1 / dt_helper(self.arm_command_timestamps)
-        gripper_command_freq = 1 / dt_helper(self.gripper_command_timestamps)
-
-        print(f'{joint_freq=:.2f}\n{arm_command_freq=:.2f}\n{gripper_command_freq=:.2f}\n')
 
 
 def get_arm_joint_positions(bot: InterbotixManipulatorXS):
@@ -302,3 +228,67 @@ def enable_gravity_compensation(bot: InterbotixManipulatorXS):
 def disable_gravity_compensation(bot: InterbotixManipulatorXS):
     gravity_compensation = InterbotixGravityCompensationInterface(bot.core)
     gravity_compensation.disable()
+
+
+JOINT_NAMES = ['waist', 'shoulder', 'elbow', 'forearm_roll', 'wrist_angle', 'wrist_rotate']
+START_ARM_POSE = [
+    0.0, -0.96, 1.16, 0.0, -0.3, 0.0, 0.02239, -0.02239,
+    0.0, -0.96, 1.16, 0.0, -0.3, 0.0, 0.02239, -0.02239,
+]
+
+LEADER_GRIPPER_CLOSE_THRESH = 0.0
+
+# Left finger position limits (qpos[7]), right_finger = -1 * left_finger
+LEADER_GRIPPER_POSITION_OPEN = 0.0323
+LEADER_GRIPPER_POSITION_CLOSE = 0.0185
+
+FOLLOWER_GRIPPER_POSITION_OPEN = 0.0579
+FOLLOWER_GRIPPER_POSITION_CLOSE = 0.0440
+
+# Gripper joint limits (qpos[6])
+LEADER_GRIPPER_JOINT_OPEN = 0.8298
+LEADER_GRIPPER_JOINT_CLOSE = -0.0552
+
+FOLLOWER_GRIPPER_JOINT_OPEN = 1.6214
+FOLLOWER_GRIPPER_JOINT_CLOSE = 0.6197
+
+### Helper functions
+
+LEADER_GRIPPER_POSITION_NORMALIZE_FN = lambda x: (x - LEADER_GRIPPER_POSITION_CLOSE) / (LEADER_GRIPPER_POSITION_OPEN - LEADER_GRIPPER_POSITION_CLOSE)
+FOLLOWER_GRIPPER_POSITION_NORMALIZE_FN = lambda x: (x - FOLLOWER_GRIPPER_POSITION_CLOSE) / (FOLLOWER_GRIPPER_POSITION_OPEN - FOLLOWER_GRIPPER_POSITION_CLOSE)
+LEADER_GRIPPER_POSITION_UNNORMALIZE_FN = lambda x: x * (LEADER_GRIPPER_POSITION_OPEN - LEADER_GRIPPER_POSITION_CLOSE) + LEADER_GRIPPER_POSITION_CLOSE
+FOLLOWER_GRIPPER_POSITION_UNNORMALIZE_FN = lambda x: x * (FOLLOWER_GRIPPER_POSITION_OPEN - FOLLOWER_GRIPPER_POSITION_CLOSE) + FOLLOWER_GRIPPER_POSITION_CLOSE
+LEADER2FOLLOWER_POSITION_FN = lambda x: FOLLOWER_GRIPPER_POSITION_UNNORMALIZE_FN(LEADER_GRIPPER_POSITION_NORMALIZE_FN(x))
+
+LEADER_GRIPPER_JOINT_NORMALIZE_FN = lambda x: (x - LEADER_GRIPPER_JOINT_CLOSE) / (LEADER_GRIPPER_JOINT_OPEN - LEADER_GRIPPER_JOINT_CLOSE)
+FOLLOWER_GRIPPER_JOINT_NORMALIZE_FN = lambda x: (x - FOLLOWER_GRIPPER_JOINT_CLOSE) / (FOLLOWER_GRIPPER_JOINT_OPEN - FOLLOWER_GRIPPER_JOINT_CLOSE)
+LEADER_GRIPPER_JOINT_UNNORMALIZE_FN = lambda x: x * (LEADER_GRIPPER_JOINT_OPEN - LEADER_GRIPPER_JOINT_CLOSE) + LEADER_GRIPPER_JOINT_CLOSE
+FOLLOWER_GRIPPER_JOINT_UNNORMALIZE_FN = lambda x: x * (FOLLOWER_GRIPPER_JOINT_OPEN - FOLLOWER_GRIPPER_JOINT_CLOSE) + FOLLOWER_GRIPPER_JOINT_CLOSE
+LEADER2FOLLOWER_JOINT_FN = lambda x: FOLLOWER_GRIPPER_JOINT_UNNORMALIZE_FN(LEADER_GRIPPER_JOINT_NORMALIZE_FN(x))
+
+LEADER_GRIPPER_VELOCITY_NORMALIZE_FN = lambda x: x / (LEADER_GRIPPER_POSITION_OPEN - LEADER_GRIPPER_POSITION_CLOSE)
+FOLLOWER_GRIPPER_VELOCITY_NORMALIZE_FN = lambda x: x / (FOLLOWER_GRIPPER_POSITION_OPEN - FOLLOWER_GRIPPER_POSITION_CLOSE)
+
+LEADER_POS2JOINT = lambda x: LEADER_GRIPPER_POSITION_NORMALIZE_FN(x) * (LEADER_GRIPPER_JOINT_OPEN - LEADER_GRIPPER_JOINT_CLOSE) + LEADER_GRIPPER_JOINT_CLOSE
+LEADER_JOINT2POS = lambda x: LEADER_GRIPPER_POSITION_UNNORMALIZE_FN((x - LEADER_GRIPPER_JOINT_CLOSE) / (LEADER_GRIPPER_JOINT_OPEN - LEADER_GRIPPER_JOINT_CLOSE))
+FOLLOWER_POS2JOINT = lambda x: FOLLOWER_GRIPPER_POSITION_NORMALIZE_FN(x) * (FOLLOWER_GRIPPER_JOINT_OPEN - FOLLOWER_GRIPPER_JOINT_CLOSE) + FOLLOWER_GRIPPER_JOINT_CLOSE
+FOLLOWER_JOINT2POS = lambda x: FOLLOWER_GRIPPER_POSITION_UNNORMALIZE_FN((x - FOLLOWER_GRIPPER_JOINT_CLOSE) / (FOLLOWER_GRIPPER_JOINT_OPEN - FOLLOWER_GRIPPER_JOINT_CLOSE))
+
+LEADER_GRIPPER_JOINT_MID = (LEADER_GRIPPER_JOINT_OPEN + LEADER_GRIPPER_JOINT_CLOSE)/2
+
+
+# RealSense cameras image topic (realsense2_camera v4.55 and up)
+COLOR_IMAGE_TOPIC_NAME = '{}/camera/color/image_rect_raw' # Change to robot.yaml
+
+
+### ALOHA Fixed Constants
+DT = 0.02
+
+try:
+    from rclpy.duration import Duration
+    from rclpy.constants import S_TO_NS
+    DT_DURATION = Duration(seconds=0, nanoseconds=DT * S_TO_NS)
+except ImportError:
+    pass
+
+FPS = 50
