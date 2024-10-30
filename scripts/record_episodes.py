@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 from aloha.real_env import get_action, make_real_env
 from aloha.robot_utils import (
     disable_gravity_compensation,
@@ -17,23 +18,20 @@ from aloha.robot_utils import (
     torque_off,
     torque_on,
 )
-
+import cv2
+import h5py
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
     robot_shutdown,
     robot_startup,
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
-
-from typing import Dict
-from tqdm import tqdm
-import argparse
-import cv2
-import h5py
 import numpy as np
 import os
 import rclpy
 import time
+from typing import Dict, List
+from tqdm import tqdm
 
 
 def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS], gravity_compensation: bool, dt: float) -> None:
@@ -332,161 +330,219 @@ def capture_one_episode(
     return True
 
 
-def check_episode_index(dataset_dir, episode_idx, data_suffix="hdf5"):
-    """Checks if a file with the given episode index exists and prompts user for overwrite permission.
-
-    Args:
-        dataset_dir (str): Directory where episodes are stored.
-        episode_idx (int): The episode index provided by the user.
-        data_suffix (str): File extension for dataset files, defaults to 'hdf5'.
-
-    Returns:
-        bool: True if the file can be written (either doesn't exist or user agrees to overwrite).
-              False if the user decides not to overwrite an existing file.
+def check_episode_index(dataset_dir: str, episode_idx: int, data_suffix: str = "hdf5") -> bool:
     """
-    # Build the filename with the given episode index
+    Checks if a file with the specified episode index exists, and prompts the user for overwrite 
+    permission if the file is present.
+
+    :param dataset_dir: Directory where episodes are stored.
+    :param episode_idx: The episode index provided by the user.
+    :param data_suffix: File extension for dataset files, defaults to 'hdf5'.
+    :return: True if the file can be written (either does not exist or user agrees to overwrite); 
+             False if the user decides not to overwrite an existing file.
+    """
+    # Construct the full file path for the episode
     episode_file = os.path.join(
         dataset_dir, f"episode_{episode_idx}.{data_suffix}")
 
+    # Check if the file exists
     if os.path.isfile(episode_file):
-        # File exists; ask user for permission to overwrite
-        user_input = (
-            input(
-                f"Episode file '{episode_file}' already exists. Do you want to overwrite it? (y/n): "
-            )
-            .strip()
-            .lower()
-        )
+        # Prompt user for overwrite permission if file exists
+        user_input = input(
+            f"Episode file '{episode_file}' already exists. Do you want to overwrite it? (y/n): "
+        ).strip().lower()
+
         if user_input == "y":
             print(f"Overwriting episode {episode_idx}.")
             return True
         else:
             print("Not overwriting the file. Operation aborted.")
             return False
-    else:
-        return True
+    return True
 
 
-def get_auto_index(dataset_dir, dataset_name_prefix="", data_suffix="hdf5"):
+def get_auto_index(dataset_dir: str, dataset_name_prefix: str = "", data_suffix: str = "hdf5") -> int:
+    """
+    Determines the next available episode index in a dataset directory. Creates the directory if it 
+    does not exist. Searches for the first unused index from 0 to `max_idx`.
+
+    :param dataset_dir: Directory where dataset episodes are stored.
+    :param dataset_name_prefix: Optional prefix for episode file names.
+    :param data_suffix: File extension for dataset files, defaults to 'hdf5'.
+    :return: The next available index for a new episode file.
+    :raises Exception: If the index limit is reached or another error occurs.
+    """
     max_idx = 1000
+
+    # Ensure the dataset directory exists
     if not os.path.isdir(dataset_dir):
         os.makedirs(dataset_dir)
+
+    # Iterate through indices to find the first available one
     for i in range(max_idx + 1):
-        if not os.path.isfile(
-            os.path.join(
-                dataset_dir, f"{dataset_name_prefix}episode_{i}.{data_suffix}")
-        ):
+        episode_file = os.path.join(
+            dataset_dir, f"{dataset_name_prefix}episode_{i}.{data_suffix}")
+        if not os.path.isfile(episode_file):
             return i
+
+    # Raise an exception if no available index is found within the range
     raise Exception(
-        f"Error getting auto index, or more than {max_idx} episodes")
+        f"Error getting auto index, or more than {max_idx} episodes.")
 
 
-def print_dt_diagnosis(actual_dt_history):
+def print_dt_diagnosis(actual_dt_history: List[List[float]]) -> float:
+    """
+    Diagnoses and prints timing statistics for each step in the episode, such as the frequency of 
+    action execution and environment steps.
+
+    :param actual_dt_history: A list of timestamp records for each timestep. Each inner list 
+                              contains three floats representing:
+                                - Start time of getting action
+                                - End time of getting action/start of step environment
+                                - End time of step environment
+    :return: The mean frequency of the total time taken for each step.
+    """
     actual_dt_history = np.array(actual_dt_history)
     get_action_time = actual_dt_history[:, 1] - actual_dt_history[:, 0]
     step_env_time = actual_dt_history[:, 2] - actual_dt_history[:, 1]
     total_time = actual_dt_history[:, 2] - actual_dt_history[:, 0]
 
     dt_mean = np.mean(total_time)
-    # dt_std = np.std(total_time)
     freq_mean = 1 / dt_mean
+
     print(
-        (
-            f"Avg freq: {freq_mean:.2f} Get action: {np.mean(get_action_time):.3f} "
-            f"Step env: {np.mean(step_env_time):.3f}"
-        )
+        f"Avg freq: {freq_mean:.2f} Get action: {np.mean(get_action_time):.3f} "
+        f"Step env: {np.mean(step_env_time):.3f}"
     )
+
     return freq_mean
 
 
-def debug():
+def debug() -> None:
+    """
+    Runs the program in debug mode, creating an `ImageRecorder` instance to record diagnostics.
+    Periodically prints diagnostic information such as image frequency and quality for debugging purposes.
+    """
     print("====== Debug mode ======")
+
+    # Initialize ImageRecorder in debug mode without initializing ROS node
     image_recorder = ImageRecorder(init_node=False, is_debug=True)
+
     while True:
         time.sleep(1)
         image_recorder.print_diagnostics()
 
 
-def main(args: dict):
+def main(args: Dict[str, any]) -> None:
+    """
+    Main function for executing a robot teleoperation task based on configuration parameters.
+    Handles dataset setup, task configuration, and runs the teleoperation loop to capture episodes.
 
+    :param args: Dictionary of arguments, expected keys:
+        - "enable_base_torque" (bool): Whether to enable torque on the base (for mobile robots).
+        - "gravity_compensation" (bool): Whether to enable gravity compensation for leader robots.
+        - "robot" (str): Robot setup configuration (e.g., 'aloha_solo', 'aloha_static', 'aloha_mobile').
+        - "task_name" (str): Task name used to fetch specific task configuration.
+        - "episode_idx" (Optional[int]): Episode index for dataset naming; if None, auto-indexing is used.
+    """
+    # Retrieve arguments and configuration settings
     torque_base = args.get("enable_base_torque", False)
     gravity_compensation = args.get("gravity_compensation", False)
-
     robot_base = args.get("robot", "")
 
+    # Load robot and task configurations from YAML files
     config = load_yaml_file("robot", robot_base).get('robot', {})
-
     task_config = load_yaml_file("task")
     task = task_config["tasks"].get(args.get("task_name"))
+
+    # Determine dataset directory and maximum timesteps
     dataset_dir = os.path.expanduser(task.get("dataset_dir"))
     max_timesteps = task.get("episode_len")
 
+    # Determine episode index (auto-index if not provided)
     if args["episode_idx"] is not None:
         episode_idx = args["episode_idx"]
     else:
         episode_idx = get_auto_index(dataset_dir)
 
+    # Check for overwrite permission if dataset already exists
     overwrite = check_episode_index(
         dataset_dir=dataset_dir, episode_idx=episode_idx)
-
     if not overwrite:
         exit()
 
+    # Generate dataset name based on episode index
     dataset_name = f"episode_{episode_idx}"
-    print(dataset_name + "\n")
+    print(f"{dataset_name}\n")
+
+    # Start capturing an episode in a loop until it completes successfully
     while True:
         is_healthy = capture_one_episode(
-            max_timesteps,
-            dataset_dir,
-            dataset_name,
-            overwrite,
-            torque_base,
-            gravity_compensation,
-            config,
+            max_timesteps=max_timesteps,
+            dataset_dir=dataset_dir,
+            dataset_name=dataset_name,
+            overwrite=overwrite,
+            torque_base=torque_base,
+            gravity_compensation=gravity_compensation,
+            config=config,
         )
         if is_healthy:
             break
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    # Argument parser to manage command-line inputs
+    parser = argparse.ArgumentParser(
+        description="Launches robot teleoperation with specified parameters.")
+
+    # Task-specific argument: required
     parser.add_argument(
         "-t",
         "--task_name",
         action="store",
         type=str,
-        help="Task name.",
+        help="Task name to specify the teleoperation task.",
         required=True,
     )
+
+    # Episode index argument: optional, defaults to auto-indexing if not provided
     parser.add_argument(
         "--episode_idx",
         action="store",
         type=int,
-        help="Episode index.",
+        help="Episode index to name the dataset file. Auto-generated if not provided.",
         default=None,
         required=False,
     )
+
+    # Base torque enabling flag: optional
     parser.add_argument(
         "-b",
         "--enable_base_torque",
         action="store_true",
         help=(
-            "If set, mobile base will be torqued on during episode recording, allowing the use of"
-            " a joystick controller or some other manual method."
+            "Enable base torque for mobile robots during recording. Allows joystick control or"
+            " other manual methods."
         ),
     )
+
+    # Gravity compensation enabling flag: optional
     parser.add_argument(
         "-g",
         "--gravity_compensation",
         action="store_true",
-        help="If set, gravity compensation will be enabled for the leader robots when teleop starts.",
+        help="Enable gravity compensation for leader robots at the start of teleoperation.",
     )
+
+    # Robot setup configuration: required
     parser.add_argument(
         "-r",
         "--robot",
         action="store",
         type=str,
-        help="Robot Setup.",
+        help="Robot setup configuration (e.g., aloha_solo, aloha_static, aloha_mobile).",
         required=True,
     )
+
+    # Execute the main function with parsed arguments
     main(vars(parser.parse_args()))
