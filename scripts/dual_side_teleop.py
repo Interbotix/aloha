@@ -29,9 +29,8 @@ import rclpy
 from rclpy.duration import Duration
 from rclpy.constants import S_TO_NS
 
-
     
-def opening_ceremony(robots: dict, config:dict) -> None:
+def opening_ceremony(robots: dict, DT: float) -> None:
     """Move all leader-follower pairs of robots to a starting pose for demonstration."""
     # Separate leader and follower robots
     leader_bots = {name: bot for name, bot in robots.items() if 'leader' in name}
@@ -72,12 +71,11 @@ def opening_ceremony(robots: dict, config:dict) -> None:
         torque_on(follower_bot)
         torque_on(leader_bot)
         
-        dt = 1 / config.get('fps', 50)
         # Move arms to starting position
         start_arm_qpos = START_ARM_POSE[:6]
         move_arms(
            bot_list=[leader_bot, follower_bot],
-           DT=dt,
+           DT=DT,
            target_pose_list=[start_arm_qpos] * 2,
            moving_time=4.0
            )
@@ -87,11 +85,11 @@ def opening_ceremony(robots: dict, config:dict) -> None:
             [leader_bot, follower_bot],
             [LEADER_GRIPPER_JOINT_MID, FOLLOWER_GRIPPER_JOINT_CLOSE],
             moving_time=0.5,
-            DT=dt
+            DT=DT
         )
 
 
-def press_to_start(robots: dict,config: dict, gravity_compensation: bool) -> None:
+def press_to_start(robots: dict,DT: float, gravity_compensation: bool) -> None:
     """Wait for the user to close the grippers on all leader robots to start."""
     
     # Extract leader bots from the robots dictionary
@@ -110,7 +108,7 @@ def press_to_start(robots: dict,config: dict, gravity_compensation: bool) -> Non
             get_arm_gripper_positions(leader_bot) < LEADER_GRIPPER_CLOSE_THRESH
             for leader_bot in leader_bots.values()
         )
-        DT = 1/config.get('fps', 50)
+        
         DT_DURATION = Duration(seconds=0, nanoseconds=DT * S_TO_NS)
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
 
@@ -134,6 +132,9 @@ def main(args: dict) -> None:
 
     config = load_yaml_file("robot", robot_base)
 
+    # Sleep for the DT duration
+    DT = 1/config.get('fps', 30)
+    
     # Dictionary to hold the dynamically created robot instances
     robots = {}
 
@@ -161,10 +162,10 @@ def main(args: dict) -> None:
 
     robot_startup(node)
     opening_ceremony(
-        robots, config
+        robots, DT
     )
     
-    press_to_start(robots, config,  gravity_compensation)
+    press_to_start(robots, DT,  gravity_compensation)
     # Teleoperation loop
     # Define gripper command objects for each follower
     gripper_commands = {
@@ -191,8 +192,6 @@ def main(args: dict) -> None:
                     )
                     follower_bot.gripper.core.pub_single.publish(gripper_command)
 
-        # Sleep for the DT duration
-        DT = 1/config.get('fps', 50)
         DT_DURATION = Duration(seconds=0, nanoseconds=DT * S_TO_NS)
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
 

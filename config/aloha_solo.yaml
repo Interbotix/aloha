@@ -1,4 +1,5 @@
 robot_name: aloha_solo
+fps: 50
 leader_arms:
   - name: leader_solo
     model: aloha_wx250s
@@ -29,6 +30,7 @@ cameras:
     enable_infra1: false
     enable_infra2: false
     color_image_topic_name : '{}/camera/color/image_rect_raw' 
+
 
 
   camera_instances:

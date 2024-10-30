@@ -30,6 +30,9 @@ def main(args):
     config = load_yaml_file('robot', robot_base)
 
     is_mobile = config.get('base', False)
+
+    DT = 1 / config.get('fps', 50)
+    
     dataset_dir = args['dataset_dir']
     episode_idx = args['episode_idx']
     dataset_name = f'episode_{episode_idx}'
@@ -67,7 +70,7 @@ def main(args):
     env.reset()
 
     time0 = time.time()
-    DT = 1 / config.get('fps', 50)
+    
     if is_mobile:
         for action, base_action in zip(actions, base_actions):
             time1 = time.time()

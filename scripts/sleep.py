@@ -39,11 +39,11 @@ def main():
 
     args = argparser.parse_args()
 
-
     robot_base = args.robot
 
     config = load_yaml_file('robot',robot_base)
-    
+
+    DT = 1/config.get('fps', 50)
 
     # Create a global ROS node
     node = create_interbotix_global_node('aloha')
@@ -88,9 +88,8 @@ def main():
     for bot in bots_to_sleep:
         torque_on(bot)
 
-    fps = config.get('fps', 50)
     # Move selected bots to their sleep positions
-    sleep_arms(bots_to_sleep, home_first=True, DT= 1/fps)
+    sleep_arms(bots_to_sleep, home_first=True, DT=DT)
 
     # Perform robot shutdown actions
     robot_shutdown(node)

@@ -140,6 +140,8 @@ def capture_one_episode(
 
     IS_MOBILE = config.get('base', False)
 
+    DT = 1 / config.get('fps',50)
+
     node = create_interbotix_global_node('aloha')
 
     env = make_real_env(
@@ -161,7 +163,7 @@ def capture_one_episode(
         exit()
 
 
-    DT = 1 / config.get('fps',50)
+    
     # move all 4 robots to a starting pose where it is easy to start teleoperation, then wait till
     # both gripper closed
     opening_ceremony(
@@ -297,13 +299,8 @@ def capture_one_episode(
             data_dict[f'/observations/images/{cam_name}'] = padded_compressed_image_list
         print(f'padding: {time.time() - t0:.2f}s')
 
-    # HDF5
-
-    # Get the number of follower robots
-    num_followers = len([robot for robot in env.robots if 'follower' in robot])
-
     # Define the total size for the datasets
-    total_size = 7 * num_followers  # 7 (6 arm joints + 1 gripper) * number of follower robots
+    total_size = 7 * len(follower_bots)  # 7 (6 arm joints + 1 gripper) * number of follower robots
 
 
     t0 = time.time()

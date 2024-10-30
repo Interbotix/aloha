@@ -84,10 +84,11 @@ class RealEnv:
         :raises ValueError: On providing False for setup_base but the robot is not mobile
         """
         self.is_mobile = config.get('base',False)
-        print(f"IS MObile is {self.is_mobile}")
+
+        self.DT = 1 / config.get('fps', 30)
+
         # Dynamically import module based on config value
         if self.is_mobile:
-            print("Importing Slate")
             xs_robot_module = importlib.import_module('interbotix_xs_modules.xs_robot.slate')
             self.InterbotixSlate = getattr(xs_robot_module, 'InterbotixSlate')
         
@@ -232,9 +233,10 @@ class RealEnv:
         
         # Move arms for all follower robots
         move_arms(
-            follower_robots,
-            [reset_position] * len(follower_robots),  # Repeat reset_position for each robot
+            bot_list=follower_robots,
+            target_pose_list=[reset_position] * len(follower_robots),  # Repeat reset_position for each robot
             moving_time=1.0,
+            DT=self.DT
         )
 
     def _reset_gripper(self):
@@ -251,6 +253,7 @@ class RealEnv:
             follower_robots,
             [FOLLOWER_GRIPPER_JOINT_OPEN] * len(follower_robots),  # Set to open for all robots
             moving_time=0.5,
+            DT=self.DT
         )
 
         # Close the grippers for all follower robots
@@ -258,6 +261,7 @@ class RealEnv:
             follower_robots,
             [FOLLOWER_GRIPPER_JOINT_CLOSE] * len(follower_robots),  # Set to close for all robots
             moving_time=1.0,
+            DT=self.DT
         )
 
 
