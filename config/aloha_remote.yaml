@@ -1,18 +1,19 @@
-robot_name: aloha_solo
+robot_name: aloha_remote
+
+follower_arms:
+  - name: follower_remote
+    model: aloha_vx300s
+    modes: follower_modes_right.yaml
+    motor_configs: aloha_vx300s.yaml
+    transform: [0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]
+
 leader_arms:
-  - name: leader_solo
+  - name: leader_remote
     model: aloha_wx250s
     modes: leader_modes_right.yaml
     motor_configs: aloha_wx250s.yaml
     motor_specs: leader_motor_specs_right.yaml
     transform: [-0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]
-
-follower_arms:
-  - name: follower_solo
-    model: aloha_vx300s
-    modes: follower_modes_right.yaml
-    motor_configs: aloha_vx300s.yaml
-    transform: [0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]
 
 
 cameras:
@@ -34,10 +35,7 @@ cameras:
   camera_instances:
     
     - name: camera_wrist_right
-      serial_no: "130322272300"
-    
-    - name: camera_high
-      serial_no: "130322274102"
+      serial_no: "218622272670"
       
 
 base: false

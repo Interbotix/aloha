@@ -6,6 +6,7 @@ from aloha.robot_utils import (
     sleep_arms,
     torque_on,
     disable_gravity_compensation,
+    load_yaml_file
 )
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -16,20 +17,6 @@ from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 import os
 
 
-def load_yaml_file(robot_base="aloha_static"):
-
-    
-    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
-
-    if not os.path.exists(yaml_file_path):
-        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
-    
-    try:
-        with open(yaml_file_path, 'r') as f:
-            return yaml.safe_load(f)
-    except Exception as e:
-        raise RuntimeError(f"Failed to load YAML file: {e}")
-    
 
 def main():
     # Parse command-line arguments
@@ -55,7 +42,7 @@ def main():
 
     robot_base = args.robot
 
-    config = load_yaml_file(robot_base)
+    config = load_yaml_file('robot',robot_base)
     
 
     # Create a global ROS node
@@ -101,8 +88,9 @@ def main():
     for bot in bots_to_sleep:
         torque_on(bot)
 
+    fps = config.get('fps', 50)
     # Move selected bots to their sleep positions
-    sleep_arms(bots_to_sleep, home_first=True)
+    sleep_arms(bots_to_sleep, home_first=True, DT= 1/fps)
 
     # Perform robot shutdown actions
     robot_shutdown(node)

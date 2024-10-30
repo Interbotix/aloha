@@ -2,6 +2,7 @@ from collections import deque
 import time
 from typing import Sequence
 import os
+import yaml
 
 from cv_bridge import CvBridge
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
@@ -12,6 +13,7 @@ from interbotix_xs_msgs.msg import JointGroupCommand, JointSingleCommand
 import numpy as np
 from rclpy.node import Node
 from sensor_msgs.msg import Image, JointState
+
 
 class ImageRecorder:
     def __init__(
@@ -26,6 +28,7 @@ class ImageRecorder:
         # Get camera names from config dictionary
         self.camera_names = [camera['name'] for camera in config.get('cameras', {}).get('camera_instances', [])]
 
+        COLOR_IMAGE_TOPIC_NAME = config.get('cameras',{}).get('common_parameters', {}).get('color_image_topic_name', None)
 
         # Dynamically create attributes and subscriptions for each camera
         for cam_name in self.camera_names:
@@ -102,8 +105,10 @@ def get_arm_gripper_positions(bot: InterbotixManipulatorXS):
 
 def move_arms(
     bot_list: Sequence[InterbotixManipulatorXS],
+    DT: float,
     target_pose_list: Sequence[Sequence[float]],
-    moving_time: float = 1.0,
+    moving_time: float = 1.0
+    
 ) -> None:
     num_steps = int(moving_time / DT)
     curr_pose_list = [get_arm_joint_positions(bot) for bot in bot_list]
@@ -119,8 +124,9 @@ def move_arms(
 
 def sleep_arms(
     bot_list: Sequence[InterbotixManipulatorXS],
+    DT: float,
     moving_time: float = 5.0,
-    home_first: bool = True,
+    home_first: bool = True
 ) -> None:
     """Command given list of arms to their sleep poses, optionally to their home poses first.
 
@@ -130,14 +136,16 @@ def sleep_arms(
     """
     if home_first:
         move_arms(
-            bot_list,
-            [[0.0, -0.96, 1.16, 0.0, -0.3, 0.0]] * len(bot_list),
+            bot_list=bot_list,
+            DT=DT,
+            target_pose_list=[[0.0, -0.96, 1.16, 0.0, -0.3, 0.0]] * len(bot_list),
             moving_time=moving_time
         )
     move_arms(
-        bot_list,
-        [bot.arm.group_info.joint_sleep_positions for bot in bot_list],
+        bot_list=bot_list,
+        target_pose_list=[bot.arm.group_info.joint_sleep_positions for bot in bot_list],
         moving_time=moving_time,
+        DT=DT
     )
 
 
@@ -145,6 +153,7 @@ def move_grippers(
     bot_list: Sequence[InterbotixManipulatorXS],
     target_pose_list: Sequence[float],
     moving_time: float,
+    DT
 ):
     gripper_command = JointSingleCommand(name='gripper')
     num_steps = int(moving_time / DT)
@@ -230,6 +239,41 @@ def disable_gravity_compensation(bot: InterbotixManipulatorXS):
     gravity_compensation.disable()
 
 
+def load_yaml_file(config_type: str = "robot", name: str = "aloha_static") -> dict:
+    """Load configuration from a YAML file based on type and name.
+
+    Args:
+        config_type (str): Type of configuration to load, e.g., 'robot' or 'task'.
+        name (str): Name of the robot or task, defaults to 'aloha_static' for robots.
+
+    Returns:
+        dict: The loaded configuration as a dictionary.
+
+    Raises:
+        FileNotFoundError: If the configuration file does not exist.
+        RuntimeError: If the YAML file fails to load.
+    """
+    # Base path of the config directory using absolute path
+    base_path = os.path.abspath(os.path.join("..", "config"))
+
+    # Set the YAML file path based on the configuration type
+    if config_type == "robot":
+        yaml_file_path = os.path.join(base_path, f"{name}.yaml")
+    elif config_type == "task":
+        yaml_file_path = os.path.join(base_path, "tasks_config.yaml")
+    else:
+        raise ValueError(f"Unsupported config_type '{config_type}'. Use 'robot' or 'task'.")
+
+    # Check if file exists and load
+    if not os.path.exists(yaml_file_path):
+        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
+    
+    try:
+        with open(yaml_file_path, 'r') as f:
+            return yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        raise RuntimeError(f"Failed to load YAML file '{yaml_file_path}': {e}")
+
 JOINT_NAMES = ['waist', 'shoulder', 'elbow', 'forearm_roll', 'wrist_angle', 'wrist_rotate']
 START_ARM_POSE = [
     0.0, -0.96, 1.16, 0.0, -0.3, 0.0, 0.02239, -0.02239,
@@ -275,20 +319,3 @@ FOLLOWER_POS2JOINT = lambda x: FOLLOWER_GRIPPER_POSITION_NORMALIZE_FN(x) * (FOLL
 FOLLOWER_JOINT2POS = lambda x: FOLLOWER_GRIPPER_POSITION_UNNORMALIZE_FN((x - FOLLOWER_GRIPPER_JOINT_CLOSE) / (FOLLOWER_GRIPPER_JOINT_OPEN - FOLLOWER_GRIPPER_JOINT_CLOSE))
 
 LEADER_GRIPPER_JOINT_MID = (LEADER_GRIPPER_JOINT_OPEN + LEADER_GRIPPER_JOINT_CLOSE)/2
-
-
-# RealSense cameras image topic (realsense2_camera v4.55 and up)
-COLOR_IMAGE_TOPIC_NAME = '{}/camera/color/image_rect_raw' # Change to robot.yaml
-
-
-### ALOHA Fixed Constants
-DT = 0.02
-
-try:
-    from rclpy.duration import Duration
-    from rclpy.constants import S_TO_NS
-    DT_DURATION = Duration(seconds=0, nanoseconds=DT * S_TO_NS)
-except ImportError:
-    pass
-
-FPS = 50

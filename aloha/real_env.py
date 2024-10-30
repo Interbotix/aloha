@@ -16,9 +16,8 @@ from aloha.robot_utils import (
     FOLLOWER_GRIPPER_POSITION_NORMALIZE_FN,
     FOLLOWER_GRIPPER_VELOCITY_NORMALIZE_FN,
     LEADER_GRIPPER_JOINT_NORMALIZE_FN,
-    START_ARM_POSE,
-    DT
-)
+    START_ARM_POSE
+    )
 
 import dm_env
 from interbotix_common_modules.common_robot.robot import (

@@ -9,11 +9,11 @@ from aloha.real_env import (
 )
 from aloha.robot_utils import (
     move_grippers,
+    load_yaml_file,
     JOINT_NAMES,
     FOLLOWER_GRIPPER_JOINT_OPEN,
 )
 import h5py
-import yaml
 
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -21,28 +21,13 @@ from interbotix_common_modules.common_robot.robot import (
     robot_startup,
 )
 
-
-
-
-
 STATE_NAMES = JOINT_NAMES + ['gripper', 'left_finger', 'right_finger']
-
-# Function to load YAML file
-def load_yaml_file(yaml_path='../config/aloha_mobile.yaml'):
-    with open(yaml_path, 'r') as f:
-        return yaml.safe_load(f)
-
 
 def main(args):
 
     robot_base = args.get('robot', '')
 
-    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
-
-    if not os.path.exists(yaml_file_path):
-        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
-
-    config = load_yaml_file(yaml_file_path)
+    config = load_yaml_file('robot', robot_base)
 
     is_mobile = config.get('base', False)
     dataset_dir = args['dataset_dir']
@@ -82,7 +67,7 @@ def main(args):
     env.reset()
 
     time0 = time.time()
-    DT = 1 / config.get('fps',50)
+    DT = 1 / config.get('fps', 50)
     if is_mobile:
         for action, base_action in zip(actions, base_actions):
             time1 = time.time()
@@ -107,7 +92,7 @@ def main(args):
             gripper_positions.append(FOLLOWER_GRIPPER_JOINT_OPEN)
 
     # Call move_grippers on the dynamically collected follower bots and gripper positions
-    move_grippers(follower_bots, gripper_positions, moving_time=0.5)
+    move_grippers(follower_bots, gripper_positions, moving_time=0.5, DT=DT)
     robot_shutdown(node)
 
 

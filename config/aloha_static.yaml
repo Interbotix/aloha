@@ -40,6 +40,8 @@ cameras:
     enable_infra: false
     enable_infra1: false
     enable_infra2: false
+    color_image_topic_name : '{}/camera/color/image_rect_raw' 
+
 
   camera_instances:
     - name: camera_high_solo

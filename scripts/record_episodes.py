@@ -20,6 +20,7 @@ from aloha.robot_utils import (
     move_grippers,
     torque_off,
     torque_on,
+    load_yaml_file,
     LEADER_GRIPPER_CLOSE_THRESH,
     LEADER_GRIPPER_JOINT_MID,
     START_ARM_POSE,
@@ -38,14 +39,6 @@ import numpy as np
 import rclpy
 from tqdm import tqdm
 
-
-
-
-
-# Function to load YAML file
-def load_yaml_file(yaml_path='../config/aloha_mobile.yaml'):
-    with open(yaml_path, 'r') as f:
-        return yaml.safe_load(f)
 
 
 def opening_ceremony(robots: dict, gravity_compensation: bool, dt: float) -> None:
@@ -92,16 +85,18 @@ def opening_ceremony(robots: dict, gravity_compensation: bool, dt: float) -> Non
         # Move arms to starting position
         start_arm_qpos = START_ARM_POSE[:6]
         move_arms(
-            [leader_bot, follower_bot],
-            [start_arm_qpos] * 2,
+            bot_list=[leader_bot, follower_bot],
+            target_pose_list=[start_arm_qpos] * 2,
             moving_time=4.0,
+            DT=dt
         )
 
         # Move grippers to starting position
         move_grippers(
             [leader_bot, follower_bot],
             [LEADER_GRIPPER_JOINT_MID, FOLLOWER_GRIPPER_JOINT_CLOSE],
-            moving_time=0.5
+            moving_time=0.5,
+            DT=dt
         )
 
     # press gripper to start data collection
@@ -142,7 +137,6 @@ def capture_one_episode(
     gravity_compensation: bool = False,
     config: dict = None
 ):
-    print(f'Dataset name: {dataset_name}')
 
     IS_MOBILE = config.get('base', False)
 
@@ -214,7 +208,8 @@ def capture_one_episode(
     move_grippers(
         list(follower_bots.values()),  # Pass the follower bots dynamically
         [FOLLOWER_GRIPPER_JOINT_OPEN] * len(follower_bots),  # Adjust the length based on the number of followers
-        moving_time=0.5
+        moving_time=0.5,
+        DT=DT
     )
 
     freq_mean = print_dt_diagnosis(actual_dt_history)
@@ -346,29 +341,27 @@ def capture_one_episode(
 
 def main(args: dict):
 
-    print("REmoving DT")
-
-    task_config = load_yaml_file('../config/tasks_config.yaml')
-    task = task_config['tasks'].get(args.get('task_name'))
-    dataset_dir = task.get('dataset_dir')
-    max_timesteps = task.get('episode_len')
     torque_base = args.get('enable_base_torque', False)
     gravity_compensation = args.get('gravity_compensation', False)
 
     robot_base = args.get('robot', '')
-
-    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
-
-    if not os.path.exists(yaml_file_path):
-        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
     
-    config = load_yaml_file(yaml_file_path)
+    config = load_yaml_file('robot', robot_base)
+
+    task_config = load_yaml_file('task')
+    task = task_config['tasks'].get(args.get('task_name'))
+    dataset_dir = os.path.expanduser(task.get('dataset_dir'))
+    max_timesteps = task.get('episode_len')
 
     if args['episode_idx'] is not None:
         episode_idx = args['episode_idx']
     else:
         episode_idx = get_auto_index(dataset_dir)
-    overwrite = True
+    
+    overwrite = check_episode_index(dataset_dir=dataset_dir, episode_idx=episode_idx)
+
+    if not overwrite:
+        exit()
 
     dataset_name = f'episode_{episode_idx}'
     print(dataset_name + '\n')
@@ -384,6 +377,34 @@ def main(args: dict):
         )
         if is_healthy:
             break
+
+
+def check_episode_index(dataset_dir, episode_idx,  data_suffix='hdf5'):
+    """Checks if a file with the given episode index exists and prompts user for overwrite permission.
+
+    Args:
+        dataset_dir (str): Directory where episodes are stored.
+        episode_idx (int): The episode index provided by the user.
+        data_suffix (str): File extension for dataset files, defaults to 'hdf5'.
+
+    Returns:
+        bool: True if the file can be written (either doesn't exist or user agrees to overwrite).
+              False if the user decides not to overwrite an existing file.
+    """
+    # Build the filename with the given episode index
+    episode_file = os.path.join(dataset_dir, f'episode_{episode_idx}.{data_suffix}')
+    
+    if os.path.isfile(episode_file):
+        # File exists; ask user for permission to overwrite
+        user_input = input(f"Episode file '{episode_file}' already exists. Do you want to overwrite it? (y/n): ").strip().lower()
+        if user_input == 'y':
+            print(f"Overwriting episode {episode_idx}.")
+            return True
+        else:
+            print("Not overwriting the file. Operation aborted.")
+            return False
+    else:
+        return True
 
 
 def get_auto_index(dataset_dir, dataset_name_prefix='', data_suffix='hdf5'):
@@ -416,11 +437,9 @@ def print_dt_diagnosis(actual_dt_history):
 
 def debug():
     print('====== Debug mode ======')
-    recorder = Recorder('right', is_debug=True)
     image_recorder = ImageRecorder(init_node=False, is_debug=True)
     while True:
         time.sleep(1)
-        recorder.print_diagnostics()
         image_recorder.print_diagnostics()
 
 

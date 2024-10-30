@@ -173,7 +173,6 @@ def launch_setup(context, *args, **kwargs):
                     'robot_name:=', follower['name']
                 ])
             }.items(),
-            condition=IfCondition(LaunchConfiguration('launch_followers')),
         )
         nodes.append(xsarm_control_follower_launch_include)
 
@@ -337,19 +336,6 @@ def generate_launch_description():
             ),
         )
     )
-
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            'launch_followers',
-            default_value='true',
-            choices=('true', 'false'),
-            description=(
-                'if `true`, launches both the leader and follower arms; if `false, just the '
-                'leaders are launched'
-            ),
-        )
-    )
-
     declared_arguments.append(
         DeclareLaunchArgument(
             'use_cameras',

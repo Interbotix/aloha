@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-from typing import Sequence
 from aloha.robot_utils import (
     enable_gravity_compensation,
     get_arm_gripper_positions,
@@ -9,6 +8,7 @@ from aloha.robot_utils import (
     move_grippers,
     torque_off,
     torque_on,
+    load_yaml_file,
     FOLLOWER_GRIPPER_JOINT_CLOSE,
     LEADER2FOLLOWER_JOINT_FN,
     LEADER_GRIPPER_CLOSE_THRESH,
@@ -25,30 +25,13 @@ from interbotix_common_modules.common_robot.robot import (
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
 import rclpy
-import os
-import yaml
 
 from rclpy.duration import Duration
 from rclpy.constants import S_TO_NS
 
 
-def load_yaml_file(robot_base="aloha_static"):
-
     
-    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
-
-    if not os.path.exists(yaml_file_path):
-        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
-    
-    try:
-        with open(yaml_file_path, 'r') as f:
-            return yaml.safe_load(f)
-    except Exception as e:
-        raise RuntimeError(f"Failed to load YAML file: {e}")
-    
-    
-    
-def opening_ceremony(robots: dict) -> None:
+def opening_ceremony(robots: dict, config:dict) -> None:
     """Move all leader-follower pairs of robots to a starting pose for demonstration."""
     # Separate leader and follower robots
     leader_bots = {name: bot for name, bot in robots.items() if 'leader' in name}
@@ -88,20 +71,23 @@ def opening_ceremony(robots: dict) -> None:
         # Turn on torque for both the leader and follower
         torque_on(follower_bot)
         torque_on(leader_bot)
-
+        
+        dt = 1 / config.get('fps', 50)
         # Move arms to starting position
         start_arm_qpos = START_ARM_POSE[:6]
         move_arms(
-            [leader_bot, follower_bot],
-            [start_arm_qpos] * 2,
-            moving_time=4.0,
-        )
+           bot_list=[leader_bot, follower_bot],
+           DT=dt,
+           target_pose_list=[start_arm_qpos] * 2,
+           moving_time=4.0
+           )
 
         # Move grippers to starting position
         move_grippers(
             [leader_bot, follower_bot],
             [LEADER_GRIPPER_JOINT_MID, FOLLOWER_GRIPPER_JOINT_CLOSE],
-            moving_time=0.5
+            moving_time=0.5,
+            DT=dt
         )
 
 
@@ -139,17 +125,15 @@ def press_to_start(robots: dict,config: dict, gravity_compensation: bool) -> Non
 
 
 def main(args: dict) -> None:
+
     gravity_compensation = args.get('gravity_compensation', False)
 
     node = create_interbotix_global_node('aloha')
 
     robot_base = args.get('robot', '')
 
-    config = load_yaml_file(robot_base)
+    config = load_yaml_file("robot", robot_base)
 
-    # Retrieve and display the robot_name
-    robot_name = config.get('robot_name', 'Unnamed Robot')
-    
     # Dictionary to hold the dynamically created robot instances
     robots = {}
 
@@ -177,7 +161,7 @@ def main(args: dict) -> None:
 
     robot_startup(node)
     opening_ceremony(
-        robots
+        robots, config
     )
     
     press_to_start(robots, config,  gravity_compensation)
@@ -216,7 +200,6 @@ def main(args: dict) -> None:
 
 
 if __name__ == '__main__':
-    print("Testing FPS")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-g', '--gravity_compensation',
@@ -227,7 +210,6 @@ if __name__ == '__main__':
     # Add robot configuration argument
     parser.add_argument(
         '-r', '--robot',
-        choices=['aloha_solo', 'aloha_static', 'aloha_mobile'],
         required=True,
         help='Specify the robot configuration to use: aloha_solo, aloha_static, or aloha_mobile.'
     )
