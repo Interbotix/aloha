@@ -14,7 +14,7 @@ from aloha.robot_utils import (
     LEADER_GRIPPER_CLOSE_THRESH,
     LEADER_GRIPPER_JOINT_MID,
     START_ARM_POSE,
-    )
+)
 
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -25,16 +25,23 @@ from interbotix_common_modules.common_robot.robot import (
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
 import rclpy
-
 from rclpy.duration import Duration
 from rclpy.constants import S_TO_NS
+from typing import Dict
 
-    
-def opening_ceremony(robots: dict, DT: float) -> None:
-    """Move all leader-follower pairs of robots to a starting pose for demonstration."""
+
+def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS], DT: float) -> None:
+    """
+    Move all leader-follower pairs of robots to a starting pose for demonstration.
+
+    :param robots: Dictionary containing robot instances categorized as 'leader' or 'follower'
+    :param DT: Time interval (in seconds) for each movement step
+    """
     # Separate leader and follower robots
-    leader_bots = {name: bot for name, bot in robots.items() if 'leader' in name}
-    follower_bots = {name: bot for name, bot in robots.items() if 'follower' in name}
+    leader_bots = {name: bot for name,
+                   bot in robots.items() if 'leader' in name}
+    follower_bots = {name: bot for name,
+                     bot in robots.items() if 'follower' in name}
 
     # Define pairs for leader and follower bots based on naming convention
     pairs = []
@@ -53,32 +60,36 @@ def opening_ceremony(robots: dict, DT: float) -> None:
                 follower_bot_name, follower_bot = follower_bots.popitem()
                 pairs.append((leader_bot, follower_bot))
 
-    # Ensure that we have at least one pair of leader and follower bots
+    # Ensure at least one pair of leader and follower bots
     if not pairs:
-        raise ValueError("No valid leader-follower pairs found in the robot dictionary.")
+        raise ValueError(
+            "No valid leader-follower pairs found in the robot dictionary.")
 
-    # Iterate through the leader-follower pairs
+    # Initialize each leader-follower pair
     for leader_bot, follower_bot in pairs:
-        # Reboot gripper motors and set operating modes for all motors
+        # Reboot gripper motors and set operating modes
         follower_bot.core.robot_reboot_motors('single', 'gripper', True)
         follower_bot.core.robot_set_operating_modes('group', 'arm', 'position')
-        follower_bot.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+        follower_bot.core.robot_set_operating_modes(
+            'single', 'gripper', 'current_based_position')
         leader_bot.core.robot_set_operating_modes('group', 'arm', 'position')
-        leader_bot.core.robot_set_operating_modes('single', 'gripper', 'position')
-        follower_bot.core.robot_set_motor_registers('single', 'gripper', 'current_limit', 300)
+        leader_bot.core.robot_set_operating_modes(
+            'single', 'gripper', 'position')
+        follower_bot.core.robot_set_motor_registers(
+            'single', 'gripper', 'current_limit', 300)
 
-        # Turn on torque for both the leader and follower
+        # Enable torque for leader and follower
         torque_on(follower_bot)
         torque_on(leader_bot)
-        
+
         # Move arms to starting position
         start_arm_qpos = START_ARM_POSE[:6]
         move_arms(
-           bot_list=[leader_bot, follower_bot],
-           DT=DT,
-           target_pose_list=[start_arm_qpos] * 2,
-           moving_time=4.0
-           )
+            bot_list=[leader_bot, follower_bot],
+            DT=DT,
+            target_pose_list=[start_arm_qpos] * 2,
+            moving_time=4.0
+        )
 
         # Move grippers to starting position
         move_grippers(
@@ -89,31 +100,36 @@ def opening_ceremony(robots: dict, DT: float) -> None:
         )
 
 
-def press_to_start(robots: dict,DT: float, gravity_compensation: bool) -> None:
-    """Wait for the user to close the grippers on all leader robots to start."""
-    
-    # Extract leader bots from the robots dictionary
-    leader_bots = {name: bot for name, bot in robots.items() if 'leader' in name}
+def press_to_start(robots: Dict[str, InterbotixManipulatorXS], DT: float, gravity_compensation: bool) -> None:
+    """
+    Wait for the user to close the grippers on all leader robots to start teleoperation.
 
-    # Disable torque for the gripper joint of each leader bot to allow user movement
-    for leader_name, leader_bot in leader_bots.items():
+    :param robots: Dictionary containing robot instances categorized as 'leader' or 'follower'
+    :param DT: Time interval (in seconds) for each movement step
+    :param gravity_compensation: Boolean flag to enable gravity compensation on leaders
+    """
+    # Extract leader bots from the robots dictionary
+    leader_bots = {name: bot for name,
+                   bot in robots.items() if 'leader' in name}
+
+    # Disable torque for gripper joint of each leader bot to allow user movement
+    for leader_bot in leader_bots.values():
         leader_bot.core.robot_torque_enable('single', 'gripper', False)
 
     print('Close the grippers to start')
 
-    # Wait for the user to close the grippers of all leader robots
+    # Wait for the user to close the grippers on all leader robots
     pressed = False
     while rclpy.ok() and not pressed:
         pressed = all(
             get_arm_gripper_positions(leader_bot) < LEADER_GRIPPER_CLOSE_THRESH
             for leader_bot in leader_bots.values()
         )
-        
         DT_DURATION = Duration(seconds=0, nanoseconds=DT * S_TO_NS)
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
 
     # Enable gravity compensation or turn off torque based on the parameter
-    for leader_name, leader_bot in leader_bots.items():
+    for leader_bot in leader_bots.values():
         if gravity_compensation:
             enable_gravity_compensation(leader_bot)
         else:
@@ -123,24 +139,25 @@ def press_to_start(robots: dict,DT: float, gravity_compensation: bool) -> None:
 
 
 def main(args: dict) -> None:
+    """
+    Main teleoperation setup function.
 
+    :param args: Dictionary containing parsed arguments including gravity compensation
+                 and robot configuration.
+    """
     gravity_compensation = args.get('gravity_compensation', False)
-
     node = create_interbotix_global_node('aloha')
 
+    # Load robot configuration
     robot_base = args.get('robot', '')
+    config = load_yaml_file("robot", robot_base).get('robot', {})
+    DT = 1 / config.get('fps', 30)
 
-    config = load_yaml_file("robot", robot_base)
-
-    # Sleep for the DT duration
-    DT = 1/config.get('fps', 30)
-    
-    # Dictionary to hold the dynamically created robot instances
+    # Initialize dictionary for robot instances
     robots = {}
 
-    # Create leader arms
+    # Create leader arms from configuration
     for leader in config.get('leader_arms', []):
-        print(leader['name'])
         robot_instance = InterbotixManipulatorXS(
             robot_model=leader['model'],
             robot_name=leader['name'],
@@ -149,9 +166,8 @@ def main(args: dict) -> None:
         )
         robots[leader['name']] = robot_instance
 
-    # Create follower arms
+    # Create follower arms from configuration
     for follower in config.get('follower_arms', []):
-        print(follower['name'])
         robot_instance = InterbotixManipulatorXS(
             robot_model=follower['model'],
             robot_name=follower['name'],
@@ -160,38 +176,39 @@ def main(args: dict) -> None:
         )
         robots[follower['name']] = robot_instance
 
+    # Startup and initialize robot sequence
     robot_startup(node)
-    opening_ceremony(
-        robots, DT
-    )
-    
-    press_to_start(robots, DT,  gravity_compensation)
-    # Teleoperation loop
+    opening_ceremony(robots, DT)
+    press_to_start(robots, DT, gravity_compensation)
+
     # Define gripper command objects for each follower
     gripper_commands = {
         follower_name: JointSingleCommand(name='gripper') for follower_name in robots if 'follower' in follower_name
     }
+
+    # Main teleoperation loop
     while rclpy.ok():
-        # Iterate through each leader-follower pair
         for leader_name, leader_bot in robots.items():
             if 'leader' in leader_name:
-                # Determine the corresponding follower based on suffix
                 suffix = leader_name.replace('leader', '')
                 follower_name = f'follower{suffix}'
                 follower_bot = robots.get(follower_name)
 
                 if follower_bot:
-                    # Sync arm joint positions
+                    # Sync arm joint positions and gripper positions
                     leader_state_joints = leader_bot.core.joint_states.position[:6]
-                    follower_bot.arm.set_joint_positions(leader_state_joints, blocking=False)
+                    follower_bot.arm.set_joint_positions(
+                        leader_state_joints, blocking=False)
 
                     # Sync gripper positions
                     gripper_command = gripper_commands[follower_name]
                     gripper_command.cmd = LEADER2FOLLOWER_JOINT_FN(
                         leader_bot.core.joint_states.position[6]
                     )
-                    follower_bot.gripper.core.pub_single.publish(gripper_command)
+                    follower_bot.gripper.core.pub_single.publish(
+                        gripper_command)
 
+        # Sleep for the DT duration
         DT_DURATION = Duration(seconds=0, nanoseconds=DT * S_TO_NS)
         get_interbotix_global_node().get_clock().sleep_for(DT_DURATION)
 
@@ -205,12 +222,9 @@ if __name__ == '__main__':
         action='store_true',
         help='If set, gravity compensation will be enabled for the leader robots when teleop starts.',
     )
-
-    # Add robot configuration argument
     parser.add_argument(
         '-r', '--robot',
         required=True,
         help='Specify the robot configuration to use: aloha_solo, aloha_static, or aloha_mobile.'
     )
-
     main(vars(parser.parse_args()))

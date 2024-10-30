@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import yaml
+from typing import Dict, Sequence
 from aloha.robot_utils import (
     sleep_arms,
     torque_on,
@@ -14,11 +14,13 @@ from interbotix_common_modules.common_robot.robot import (
     robot_startup,
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
-import os
 
 
-
-def main():
+def main() -> None:
+    """
+    Main function to parse command-line arguments, initialize robot configurations,
+    and send selected robots to their sleep positions.
+    """
     # Parse command-line arguments
     argparser = argparse.ArgumentParser(
         prog='sleep',
@@ -36,53 +38,54 @@ def main():
         required=True,
         help='Specify the robot configuration to use: aloha_solo, aloha_static, or aloha_mobile.'
     )
-
     args = argparser.parse_args()
 
+    # Load robot configuration
     robot_base = args.robot
+    config = load_yaml_file('robot', robot_base).get('robot', {})
 
-    config = load_yaml_file('robot',robot_base)
-
-    DT = 1/config.get('fps', 50)
+    # Calculate time step for movement based on FPS from config
+    DT = 1 / config.get('fps', 50)
 
     # Create a global ROS node
     node = create_interbotix_global_node('aloha')
 
-    # Create a dictionary to store robots
-    robots = {}
+    # Dictionary to store robots
+    robots: Dict[str, InterbotixManipulatorXS] = {}
 
-    # Create leader arms
+    # Initialize leader arms
     for leader in config.get('leader_arms', []):
-        print(leader['name'])
-        robot_instance = InterbotixManipulatorXS(
+        print(f"Initializing leader arm: {leader['name']}")
+        robots[leader['name']] = InterbotixManipulatorXS(
             robot_model=leader['model'],
             robot_name=leader['name'],
             node=node,
             iterative_update_fk=False,
         )
-        robots[leader['name']] = robot_instance
 
-    # Create follower arms
+    # Initialize follower arms
     for follower in config.get('follower_arms', []):
-        print(follower['name'])
-        robot_instance = InterbotixManipulatorXS(
+        print(f"Initializing follower arm: {follower['name']}")
+        robots[follower['name']] = InterbotixManipulatorXS(
             robot_model=follower['model'],
             robot_name=follower['name'],
             node=node,
             iterative_update_fk=False,
         )
-        robots[follower['name']] = robot_instance
 
     # Perform robot startup actions
     robot_startup(node)
 
-    # Disable gravity compensation for leaders if applicable
+    # Disable gravity compensation for leader arms
     for name, bot in robots.items():
         if 'leader' in name:
             disable_gravity_compensation(bot)
 
-    # Determine which bots to put to sleep
-    bots_to_sleep = robots.values() if args.all else [bot for name, bot in robots.items() if 'follower' in name]
+    # Determine which bots to put to sleep (all if '--all' flag is set, else only followers)
+    bots_to_sleep: Sequence[InterbotixManipulatorXS] = (
+        list(robots.values()) if args.all else [
+            bot for name, bot in robots.items() if 'follower' in name]
+    )
 
     # Enable torque on selected bots
     for bot in bots_to_sleep:
@@ -97,4 +100,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

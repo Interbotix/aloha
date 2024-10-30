@@ -3,6 +3,7 @@ import os
 
 from aloha.robot_utils import (
     JOINT_NAMES,
+    load_yaml_file
 )
 import cv2
 import h5py
@@ -56,22 +57,12 @@ def load_hdf5(dataset_dir, dataset_name, IS_MOBILE):
     return qpos, qvel, effort, action, base_action, image_dict
 
 
-def load_yaml_file(yaml_path='../config/aloha_mobile.yaml'):
-    with open(yaml_path, 'r') as f:
-        return yaml.safe_load(f)
-
-
 def main(args):
     dataset_dir = args['dataset_dir']
     episode_idx = args['episode_idx']
     robot_base = args['robot']
 
-    yaml_file_path = os.path.join("..", "config", f"{robot_base}.yaml")
-
-    if not os.path.exists(yaml_file_path):
-        raise FileNotFoundError(f"Configuration file '{yaml_file_path}' not found.")
-
-    config = load_yaml_file(yaml_file_path)
+    config = load_yaml_file('robot', robot_base).get('robot', {})
 
     IS_MOBILE = config.get('base', False)
     DT = 1/config.get('fps', 50)
@@ -82,7 +73,8 @@ def main(args):
     else:
         dataset_name = f'episode_{episode_idx}'
 
-    qpos, _, _, action, base_action, image_dict = load_hdf5(dataset_dir, dataset_name, IS_MOBILE)
+    qpos, _, _, action, base_action, image_dict = load_hdf5(
+        dataset_dir, dataset_name, IS_MOBILE)
     print('hdf5 loaded!')
     save_videos(
         image_dict,
@@ -97,7 +89,8 @@ def main(args):
     if IS_MOBILE:
         visualize_base(
             base_action,
-            plot_path=os.path.join(dataset_dir, dataset_name + '_base_action.png')
+            plot_path=os.path.join(
+                dataset_dir, dataset_name + '_base_action.png')
         )
 
 
@@ -107,7 +100,8 @@ def save_videos(video, dt, video_path=None):
         h, w, _ = video[0][cam_names[0]].shape
         w = w * len(cam_names)
         fps = int(1/dt)
-        out = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+        out = cv2.VideoWriter(
+            video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
         for ts, image_dict in enumerate(video):
             images = []
             for cam_name in cam_names:
@@ -123,11 +117,13 @@ def save_videos(video, dt, video_path=None):
         all_cam_videos = []
         for cam_name in cam_names:
             all_cam_videos.append(video[cam_name])
-        all_cam_videos = np.concatenate(all_cam_videos, axis=2)  # width dimension
+        all_cam_videos = np.concatenate(
+            all_cam_videos, axis=2)  # width dimension
 
         n_frames, h, w, _ = all_cam_videos.shape
         fps = int(1 / dt)
-        out = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+        out = cv2.VideoWriter(
+            video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
         for t in range(n_frames):
             image = all_cam_videos[t]
             image = image[:, :, [2, 1, 0]]  # swap B and R channel
@@ -151,7 +147,8 @@ def visualize_joints(qpos_list, command_list, plot_path=None, ylim=None, label_o
 
     # plot joint state
     all_names = (
-        [f'{name}_left' for name in STATE_NAMES] + [f'{name}_right' for name in STATE_NAMES]
+        [f'{name}_left' for name in STATE_NAMES] +
+        [f'{name}_right' for name in STATE_NAMES]
     )
     for dim_idx in range(num_dim):
         ax = axs[dim_idx]
@@ -185,7 +182,8 @@ def visualize_single(efforts_list, label, plot_path=None, ylim=None, label_overw
 
     # plot joint state
     all_names = (
-        [name + '_left' for name in STATE_NAMES] + [name + '_right' for name in STATE_NAMES]
+        [name + '_left' for name in STATE_NAMES] +
+        [name + '_right' for name in STATE_NAMES]
     )
     for dim_idx in range(num_dim):
         ax = axs[dim_idx]

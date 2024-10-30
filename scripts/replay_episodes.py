@@ -23,16 +23,17 @@ from interbotix_common_modules.common_robot.robot import (
 
 STATE_NAMES = JOINT_NAMES + ['gripper', 'left_finger', 'right_finger']
 
+
 def main(args):
 
     robot_base = args.get('robot', '')
 
-    config = load_yaml_file('robot', robot_base)
+    config = load_yaml_file('robot', robot_base).get('robot', {})
 
     is_mobile = config.get('base', False)
 
     DT = 1 / config.get('fps', 50)
-    
+
     dataset_dir = args['dataset_dir']
     episode_idx = args['episode_idx']
     dataset_name = f'episode_{episode_idx}'
@@ -49,8 +50,9 @@ def main(args):
 
     node = create_interbotix_global_node('aloha')
 
-    env = make_real_env(node, setup_robots=False, setup_base=is_mobile, config=config)
-    
+    env = make_real_env(node, setup_robots=False,
+                        setup_base=is_mobile, config=config)
+
     if is_mobile:
         env.base.base.set_motor_torque(True)
     robot_startup(node)
@@ -62,7 +64,8 @@ def main(args):
             # Set the operating mode of the arm to 'position'
             bot.core.robot_set_operating_modes('group', 'arm', 'position')
             # Set the operating mode of the gripper to 'current_based_position'
-            bot.core.robot_set_operating_modes('single', 'gripper', 'current_based_position')
+            bot.core.robot_set_operating_modes(
+                'single', 'gripper', 'current_based_position')
             # Enable torque for the robot
             bot.core.robot_torque_enable('group', 'arm', True)
             bot.core.robot_torque_enable('single', 'gripper', True)
@@ -70,7 +73,7 @@ def main(args):
     env.reset()
 
     time0 = time.time()
-    
+
     if is_mobile:
         for action, base_action in zip(actions, base_actions):
             time1 = time.time()
