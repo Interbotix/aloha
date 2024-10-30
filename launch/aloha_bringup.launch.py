@@ -86,12 +86,12 @@ def launch_setup(context, *args, **kwargs):
             'mode_configs': PathJoinSubstitution([
                 FindPackageShare('aloha'),
                 'config',
-                leader['modes'],
+                f"leader_modes_{leader['orientation']}.yaml",
             ]),
             'motor_configs': PathJoinSubstitution([
                 FindPackageShare('interbotix_xsarm_control'),
                 'config',
-                leader['motor_configs'],
+                f"{leader['model']}.yaml",
             ]),
             'use_rviz': 'false',
             'robot_description': Command([
@@ -131,10 +131,10 @@ def launch_setup(context, *args, **kwargs):
             parameters=[{'motor_specs': PathJoinSubstitution([
                 FindPackageShare('aloha'),
                 'config',
-                leader['motor_specs'],
+                f"leader_motor_specs_{leader['orientation']}.yaml",
             ])}],
             output='screen',
-            condition = IfCondition(LaunchConfiguration('use_gravity_compensation'))
+            condition=IfCondition(LaunchConfiguration('use_gravity_compensation'))
         )
         nodes.append(gravity_compensation_node)
 
@@ -155,12 +155,12 @@ def launch_setup(context, *args, **kwargs):
                 'mode_configs': PathJoinSubstitution([
                     FindPackageShare('aloha'),
                     'config',
-                    follower['modes'],
+                    f"follower_modes_{follower['orientation']}.yaml",
                 ]),
                 'motor_configs': PathJoinSubstitution([
                     FindPackageShare('interbotix_xsarm_control'),
                     'config',
-                    follower['motor_configs'],
+                    f"{follower['model']}.yaml",
                 ]),
                 'use_rviz': 'false',
                 'robot_description': Command([

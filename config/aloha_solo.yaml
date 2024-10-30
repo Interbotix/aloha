@@ -3,17 +3,14 @@ fps: 50
 leader_arms:
   - name: leader_solo
     model: aloha_wx250s
-    modes: leader_modes_right.yaml
-    motor_configs: aloha_wx250s.yaml
-    motor_specs: leader_motor_specs_right.yaml
     transform: [-0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]
+    orientation: right
 
 follower_arms:
   - name: follower_solo
     model: aloha_vx300s
-    modes: follower_modes_right.yaml
-    motor_configs: aloha_vx300s.yaml
     transform: [0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]
+    orientation: right
 
 
 cameras:
