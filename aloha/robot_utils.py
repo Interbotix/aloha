@@ -25,11 +25,12 @@ class ImageRecorder:
         self.is_debug = is_debug
         self.bridge = CvBridge()
 
+        camera_config = config.get('cameras', {})
         # Get camera names from config dictionary
-        self.camera_names = [camera['name'] for camera in config.get(
-            'cameras', {}).get('camera_instances', [])]
+        self.camera_names = [camera['name']
+                             for camera in camera_config.get('camera_instances', [])]
 
-        COLOR_IMAGE_TOPIC_NAME = config.get('cameras', {}).get(
+        color_image_topic_name = config.get('cameras', {}).get(
             'common_parameters', {}).get('color_image_topic_name', None)
 
         # Dynamically create attributes and subscriptions for each camera
@@ -42,7 +43,7 @@ class ImageRecorder:
             callback_func = self.create_callback(cam_name)
 
             # Subscribe to the camera topic
-            topic = COLOR_IMAGE_TOPIC_NAME.format(cam_name)
+            topic = color_image_topic_name.format(cam_name)
             node.create_subscription(Image, topic, callback_func, 20)
 
             # If in debug mode, create a deque to store timestamps
@@ -106,12 +107,11 @@ def get_arm_gripper_positions(bot: InterbotixManipulatorXS):
 
 def move_arms(
     bot_list: Sequence[InterbotixManipulatorXS],
-    DT: float,
+    dt: float,
     target_pose_list: Sequence[Sequence[float]],
-    moving_time: float = 1.0
-
+    moving_time: float = 1.0,
 ) -> None:
-    num_steps = int(moving_time / DT)
+    num_steps = int(moving_time / dt)
     curr_pose_list = [get_arm_joint_positions(bot) for bot in bot_list]
     zipped_lists = zip(curr_pose_list, target_pose_list)
     traj_list = [
@@ -120,14 +120,14 @@ def move_arms(
     for t in range(num_steps):
         for bot_id, bot in enumerate(bot_list):
             bot.arm.set_joint_positions(traj_list[bot_id][t], blocking=False)
-        time.sleep(DT)
+        time.sleep(dt)
 
 
 def sleep_arms(
     bot_list: Sequence[InterbotixManipulatorXS],
-    DT: float,
+    dt: float,
     moving_time: float = 5.0,
-    home_first: bool = True
+    home_first: bool = True,
 ) -> None:
     """Command given list of arms to their sleep poses, optionally to their home poses first.
 
@@ -138,7 +138,7 @@ def sleep_arms(
     if home_first:
         move_arms(
             bot_list=bot_list,
-            DT=DT,
+            dt=dt,
             target_pose_list=[
                 [0.0, -0.96, 1.16, 0.0, -0.3, 0.0]] * len(bot_list),
             moving_time=moving_time
@@ -148,7 +148,7 @@ def sleep_arms(
         target_pose_list=[
             bot.arm.group_info.joint_sleep_positions for bot in bot_list],
         moving_time=moving_time,
-        DT=DT
+        dt=dt,
     )
 
 
@@ -156,10 +156,21 @@ def move_grippers(
     bot_list: Sequence[InterbotixManipulatorXS],
     target_pose_list: Sequence[float],
     moving_time: float,
-    DT
-):
+    dt: float,
+) -> None:
+    """
+    Moves the grippers of a list of robotic arms to target positions over a specified duration.
+
+    :param bot_list: List of InterbotixManipulatorXS objects representing the robots whose grippers will be moved.
+    :param target_pose_list: List of target gripper positions (float) for each robot in bot_list.
+    :param moving_time: Total time (in seconds) to complete the gripper movement.
+    :param dt: Time step duration (in seconds) between each gripper position update.
+
+    The function calculates a smooth trajectory for each gripper from its current position to the target position
+    based on the specified moving_time and dt. It then publishes commands at each step to achieve the desired movement.
+    """
     gripper_command = JointSingleCommand(name='gripper')
-    num_steps = int(moving_time / DT)
+    num_steps = int(moving_time / dt)
     curr_pose_list = [get_arm_gripper_positions(bot) for bot in bot_list]
     zipped_lists = zip(curr_pose_list, target_pose_list)
     traj_list = [
@@ -169,7 +180,7 @@ def move_grippers(
         for bot_id, bot in enumerate(bot_list):
             gripper_command.cmd = traj_list[bot_id][t]
             bot.gripper.core.pub_single.publish(gripper_command)
-        time.sleep(DT)
+        time.sleep(dt)
 
 
 def setup_follower_bot(bot: InterbotixManipulatorXS):
@@ -245,19 +256,16 @@ def disable_gravity_compensation(bot: InterbotixManipulatorXS):
 
 
 def load_yaml_file(config_type: str = "robot", name: str = "aloha_static") -> dict:
-    """Load configuration from a YAML file based on type and name.
-
-    Args:
-        config_type (str): Type of configuration to load, e.g., 'robot' or 'task'.
-        name (str): Name of the robot or task, defaults to 'aloha_static' for robots.
-
-    Returns:
-        dict: The loaded configuration as a dictionary.
-
-    Raises:
-        FileNotFoundError: If the configuration file does not exist.
-        RuntimeError: If the YAML file fails to load.
     """
+    Loads configuration from a YAML file based on the specified type and name.
+
+    :param config_type: Type of configuration to load, e.g., 'robot' or 'task'. Defaults to 'robot'.
+    :param name: Name of the robot or task configuration to load. Defaults to 'aloha_static' for robots.
+    :return: The loaded configuration as a dictionary.
+    :raises FileNotFoundError: Raised if the specified configuration file does not exist.
+    :raises RuntimeError: Raised if there is an error loading the YAML file.
+    """
+
     # Base path of the config directory using absolute path
     base_path = os.path.abspath(os.path.join("..", "config"))
 

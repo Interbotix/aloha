@@ -1,0 +1,120 @@
+robot:
+  # Unique identifier for the robot setup (e.g., aloha_stationary)
+  name: aloha_stationary
+
+  # Leader Arm Configuration (Human-controlled)
+  leader_arms:
+    - # Identifier for the stationary leader arm (naming convention: leader_<unique_identification>)
+      name: leader_right
+
+      # Model type for calibration and compatibility
+      model: aloha_wx250s
+
+      # Orientation or side of the arm (options: left, right)
+      orientation: right
+
+      # Position and orientation of arm in space (applied for visualization tools like RVIZ)
+      transform: [-0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]
+
+    - # Identifier for the left leader arm
+      name: leader_left
+
+      # Model type for calibration and compatibility
+      model: aloha_wx250s
+
+      # Orientation or side of the arm
+      orientation: left
+
+      # Position and orientation of arm in space
+      transform: [-0.5, 0.25, 0.0, 0.0, 0.0, 0.0, 1.0]
+
+  # Follower Arm Configuration (Robot-controlled)
+  follower_arms:
+    - # Unique name for the stationary follower arm (naming convention: follower_<unique_identification>)
+      name: follower_right
+
+      # Model type for calibration and compatibility
+      model: aloha_vx300s
+
+      # Orientation or side of the arm
+      orientation: right
+
+      # Position and orientation of arm in space
+      transform: [0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]
+
+    - # Identifier for the left follower arm
+      name: follower_left
+
+      # Model type for calibration and compatibility
+      model: aloha_vx300s
+
+      # Orientation or side of the arm
+      orientation: left
+
+      # Position and orientation of arm in space
+      transform: [0.5, 0.25, 0.0, 0.0, 0.0, 0.0, 1.0]
+
+  # Camera Configuration
+  cameras:
+    # Common parameters for all cameras
+    common_parameters:
+      # Enable color mode for all cameras (default: true)
+      enable_color: true
+
+      # RGB camera configuration
+      rgb_camera:
+        # Resolution and FPS for RGB video (e.g., '640,480,60')
+        profile: "640,480,60"
+
+        # Disables auto exposure for consistent lighting (default: false)
+        enable_auto_exposure: false
+
+      # Depth module configuration
+      depth_module:
+        # Resolution and FPS for depth sensing (e.g., '640,480,60')
+        profile: "640,480,60"
+
+        # Disables auto exposure for depth consistency (default: false)
+        enable_auto_exposure: false
+
+      # Disables depth sensing (default: false)
+      enable_depth: false
+
+      # Infrared camera settings (default: false for all)
+      enable_infra: false
+      enable_infra1: false
+      enable_infra2: false
+
+      # Topic format for color images (used by the realsense package, e.g., '{}/camera/color/image_rect_raw')
+      color_image_topic_name: "{}/camera/color/image_rect_raw"
+
+    # Individual camera instances with unique parameters
+    camera_instances:
+      - # Identifier for stationary high camera
+        name: camera_high
+
+        # Serial number for device identification
+        serial_no: "130322274102"
+
+      - # Identifier for a stationary low camera
+        name: camera_low
+
+        # Serial number for device identification
+        serial_no: "128422271347"
+
+      - # Identifier for right wrist camera
+        name: camera_wrist_right
+
+        # Serial number for device identification
+        serial_no: "130322272300"
+
+      - # Identifier for left wrist camera
+        name: camera_wrist_left
+
+        # Serial number for device identification
+        serial_no: "218622272670"
+
+  # Base configuration
+  base:
+    # Indicates whether a robot base is used (default: false for stationary robots)
+    enable: false

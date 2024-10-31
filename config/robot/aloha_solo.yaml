@@ -1,46 +1,86 @@
 robot:
-  # Basic robot configuration
-  name: aloha_solo                # Unique identifier for the robot
-  fps: 50                         # Frames per second for system updates
+  # Unique identifier for the robot (e.g., aloha_solo, aloha_stationary, aloha_mobile)
+  name: aloha_solo                
+
+  # Frames per second for system updates (default: 50)
+  fps: 50                         
 
   # Leader Arm Configuration
   leader_arms:
-    - name: leader_solo           # Unique name for the solo leader arm
-      model: aloha_wx250s         # Model type for compatibility and calibration
-      orientation: right          # Orientation/side of the arm
-      transform: [-0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]  # Transformation matrix for spatial alignment
+    - # Unique name for the solo leader arm (naming convention: leader_<unique_identification>)
+      name: leader_solo           
+
+      # Model type for compatibility and calibration
+      model: aloha_wx250s          
+
+      # Orientation or side of the arm (options: left, right)
+      orientation: right           
+
+      # Transformation matrix for spatial alignment (used in RVIZ or other visualization tools)
+      transform: [-0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]  
 
   # Follower Arm Configuration
   follower_arms:
-    - name: follower_solo         # Unique name for the solo follower arm
-      model: aloha_vx300s         # Model type for compatibility and calibration
-      orientation: right          # Orientation/side of the arm
-      transform: [0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]  # Transformation matrix for spatial alignment
+    - # Unique name for the solo follower arm (naming convention: follower_<unique_identification>)
+      name: follower_solo          
+
+      # Model type for compatibility and calibration
+      model: aloha_vx300s          
+
+      # Orientation or side of the arm
+      orientation: right           
+
+      # Transformation matrix for spatial alignment
+      transform: [0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]  
 
   # Camera Configuration
   cameras:
     # Common parameters for all camera instances
     common_parameters:
-      enable_color: true                     # Enable color camera mode
+      # Enable color camera mode (default: true)
+      enable_color: true                     
+
+      # RGB camera settings for resolution and FPS
       rgb_camera:
-        profile: '640,480,60'                # Resolution and FPS for RGB camera
-        enable_auto_exposure: false          # Disable auto exposure for consistent lighting
+        # Profile specifying resolution and FPS (e.g., '640,480,60')
+        profile: '640,480,60'                
+
+        # Disable auto exposure for consistent lighting (default: false)
+        enable_auto_exposure: false          
+
+      # Depth module settings
       depth_module:
-        profile: '640,480,60'                # Resolution and FPS for depth module
-        enable_auto_exposure: false          # Disable auto exposure for depth consistency
-      enable_depth: false                    # Overall depth mode status (true or false)
-      enable_infra: false                    # Infrared camera setting (primary)
-      enable_infra1: false                   # Infrared camera setting (secondary, IR1)
-      enable_infra2: false                   # Infrared camera setting (secondary, IR2)
-      color_image_topic_name: '{}/camera/color/image_rect_raw'  # Topic format for color images
+        # Profile specifying resolution and FPS (e.g., '640,480,60')
+        profile: '640,480,60'                
+
+        # Disable auto exposure for depth consistency (default: false)
+        enable_auto_exposure: false          
+
+      # Overall depth mode status (default: false)
+      enable_depth: false                    
+
+      # Infrared camera settings (default: false for all)
+      enable_infra: false                    
+      enable_infra1: false                   
+      enable_infra2: false                   
+
+      # Topic format for color images (use format specified by realsense, e.g., '{}/camera/color/image_rect_raw')
+      color_image_topic_name: '{}/camera/color/image_rect_raw'  
 
     # Individual camera instances with unique parameters
     camera_instances:
-      - name: camera_wrist_right             # Identifier for the right wrist camera
-        serial_no: "130322272300"            # Serial number for device identification
+      - # Identifier for the right wrist camera
+        name: camera_wrist_right             
 
-      - name: camera_high                    # Identifier for a high-position camera
-        serial_no: "130322274102"            # Serial number for device identification
+        # Serial number for device identification
+        serial_no: "130322272300"            
+
+      - # Identifier for a high-position camera
+        name: camera_high                    
+
+        # Serial number for device identification
+        serial_no: "130322274102"            
 
   # Base Configuration
-  base: false                                # Status of base usage (whether robot has a base or not)
+  # Indicates whether a robot base is used (default: false). Use 'true' for mobile robots like aloha_mobile
+  base: false                                

@@ -7,3 +7,6 @@ log*
 __pycache__/
 act/
 data/
+config/robot/aloha_remote.yaml
+config/robot/aloha_shoot.yaml
+

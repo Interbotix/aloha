@@ -19,11 +19,10 @@ from launch.conditions import (
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
-    EnvironmentVariable,
+    Command,
+    FindExecutable,
     LaunchConfiguration,
     PathJoinSubstitution,
-    FindExecutable,
-    Command,
     TextSubstitution,
 )
 from launch_ros.actions import Node
@@ -43,21 +42,15 @@ def launch_setup(context, *args, **kwargs):
 
     # Get the base name from the 'robot_config_name' launch argument and construct the YAML path
     robot_config_base = LaunchConfiguration("robot").perform(context)
-    yaml_file_path = PathJoinSubstitution(
-        [
-            FindPackageShare("aloha"),
-            "config",
-            "robot",
-            TextSubstitution(text=f"{robot_config_base}.yaml"),
-        ]
-    ).perform(context)
+    yaml_file_path = PathJoinSubstitution([
+        FindPackageShare("aloha"),
+        "config",
+        "robot",
+        TextSubstitution(text=f"{robot_config_base}.yaml"),
+    ]).perform(context)
 
     # Load the YAML file
     config = load_yaml_file(yaml_file_path).get('robot', {})
-
-    # Retrieve and display the robot_name
-    robot_name = config.get("name", "Unnamed Robot")
-    print(f"Robot Name: {robot_name}")
 
     descriptions = {}
 
@@ -77,17 +70,13 @@ def launch_setup(context, *args, **kwargs):
     for leader in config.get("leader_arms", []):
 
         xsarm_control_leader_launch_include = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                [
-                    PathJoinSubstitution(
-                        [
+            PythonLaunchDescriptionSource([
+                    PathJoinSubstitution([
                             FindPackageShare("interbotix_xsarm_control"),
                             "launch",
                             "xsarm_control.launch.py",
-                        ]
-                    )
-                ]
-            ),
+                        ])
+                ]),
             launch_arguments={
                 "robot_model": leader["model"],
                 "robot_name": leader["name"],
@@ -169,37 +158,28 @@ def launch_setup(context, *args, **kwargs):
     for follower in config.get("follower_arms", []):
         # Launch follower arm node
         xsarm_control_follower_launch_include = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                [
-                    PathJoinSubstitution(
-                        [
+            PythonLaunchDescriptionSource([
+                    PathJoinSubstitution([
                             FindPackageShare("interbotix_xsarm_control"),
                             "launch",
                             "xsarm_control.launch.py",
-                        ]
-                    )
-                ]
-            ),
+                        ])
+                ]),
             launch_arguments={
                 "robot_model": follower["model"],
                 "robot_name": follower["name"],
-                "mode_configs": PathJoinSubstitution(
-                    [
+                "mode_configs": PathJoinSubstitution([
                         FindPackageShare("aloha"),
                         "config",
                         f"follower_modes_{follower['orientation']}.yaml",
-                    ]
-                ),
-                "motor_configs": PathJoinSubstitution(
-                    [
+                    ]),
+                "motor_configs": PathJoinSubstitution([
                         FindPackageShare("interbotix_xsarm_control"),
                         "config",
                         f"{follower['model']}.yaml",
-                    ]
-                ),
+                    ]),
                 "use_rviz": "false",
-                "robot_description": Command(
-                    [
+                "robot_description": Command([
                         FindExecutable(name="xacro"),
                         " ",
                         PathJoinSubstitution(
@@ -213,8 +193,7 @@ def launch_setup(context, *args, **kwargs):
                         " ",
                         "robot_name:=",
                         follower["name"],
-                    ]
-                ),
+                    ]),
             }.items(),
             condition=IfCondition(LaunchConfiguration("launch_followers")),
         )
@@ -274,11 +253,9 @@ def launch_setup(context, *args, **kwargs):
     )
 
     base_nodes = []
-    # Load the base enable flag from the YAML file
-    base_enabled = config.get("base", False)
-
+    
     # Check if base is enabled in the YAML configuration
-    if base_enabled:
+    if config.get("base", False):
         # Launch the base nodes
         slate_base_node = Node(
             package="interbotix_slate_driver",
@@ -361,7 +338,6 @@ def launch_setup(context, *args, **kwargs):
 
 def generate_launch_description():
 
-    print("Generating Launch Description")
     declared_arguments = []
 
     declared_arguments.append(

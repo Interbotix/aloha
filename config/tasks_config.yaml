@@ -1,23 +1,36 @@
-# task_config.yaml
+# ==============================================================================
+# Task Configuration File (task_config.yaml)
+# ==============================================================================
+# This file contains configuration settings for various tasks on the Aloha robot
+# systems. Each task has specific parameters, such as dataset directory and 
+# episode length, tailored for different Aloha robot setups (e.g., mobile, 
+# stationary, solo).
+# ==============================================================================
 
-# Real hardware task configurations
 tasks:
-  aloha_mobile_hello_aloha:
-    dataset_dir: "/path/to/your/data/aloha_mobile_hello_aloha"
-    episode_len: 800
-
+  # ----------------------------------------------------------------------------
+  # Task: Aloha Mobile Dummy
+  # ----------------------------------------------------------------------------
   aloha_mobile_dummy:
-    dataset_dir: "/path/to/your/data/aloha_mobile_dummy"
-    episode_len: 1000
+    # Path to the dataset storage directory
+    dataset_dir: "~/aloha_data/aloha_mobile_dummy"  
+    # Length of each episode in timesteps
+    episode_len: 1000                               
 
-  aloha_stationary_hello_aloha:
-    dataset_dir: "/path/to/your/data/aloha_stationary_hello_aloha"
-    episode_len: 800
-
+  # ----------------------------------------------------------------------------
+  # Task: Aloha Stationary Dummy
+  # ----------------------------------------------------------------------------
   aloha_stationary_dummy:
-    dataset_dir: "/path/to/your/data/aloha_stationary_dummy"
-    episode_len: 500
+    # Path to the dataset storage directory
+    dataset_dir: "~/aloha_data/aloha_stationary_dummy"  
+    # Length of each episode in timesteps
+    episode_len: 500                                   
 
+  # ----------------------------------------------------------------------------
+  # Task: Aloha Solo Dummy
+  # ----------------------------------------------------------------------------
   aloha_solo_dummy:
-    dataset_dir: "~/aloha_data/aloha_solo_dummy"
-    episode_len: 500
+    # Path to the dataset storage directory
+    dataset_dir: "~/aloha_data/aloha_solo_dummy"  
+    # Length of each episode in timesteps
+    episode_len: 500                              
