@@ -17,7 +17,7 @@ robot:
       orientation: right           
 
       # Transformation matrix for spatial alignment (used in RVIZ or other visualization tools)
-      transform: [-0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]  
+      transform: [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  
 
   # Follower Arm Configuration
   follower_arms:
@@ -31,7 +31,7 @@ robot:
       orientation: right           
 
       # Transformation matrix for spatial alignment
-      transform: [0.5, -0.25, 0.0, 0.0, 0.0, 0.0, 1.0]  
+      transform: [0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  
 
   # Camera Configuration
   cameras:
@@ -73,13 +73,13 @@ robot:
         name: camera_wrist_right             
 
         # Serial number for device identification
-        serial_no: "130322272300"            
+        serial_no: ""            
 
       - # Identifier for a high-position camera
         name: camera_high                    
 
         # Serial number for device identification
-        serial_no: "130322274102"            
+        serial_no: ""            
 
   # Base Configuration
   # Indicates whether a robot base is used (default: false). Use 'true' for mobile robots like aloha_mobile

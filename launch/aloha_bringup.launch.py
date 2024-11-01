@@ -71,47 +71,38 @@ def launch_setup(context, *args, **kwargs):
 
         xsarm_control_leader_launch_include = IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
-                    PathJoinSubstitution([
-                            FindPackageShare("interbotix_xsarm_control"),
-                            "launch",
-                            "xsarm_control.launch.py",
-                        ])
-                ]),
+                PathJoinSubstitution([
+                    FindPackageShare("interbotix_xsarm_control"),
+                    "launch",
+                    "xsarm_control.launch.py",
+                ])
+            ]),
             launch_arguments={
                 "robot_model": leader["model"],
                 "robot_name": leader["name"],
-                "mode_configs": PathJoinSubstitution(
-                    [
-                        FindPackageShare("aloha"),
-                        "config",
-                        f"leader_modes_{leader['orientation']}.yaml",
-                    ]
-                ),
-                "motor_configs": PathJoinSubstitution(
-                    [
-                        FindPackageShare("interbotix_xsarm_control"),
-                        "config",
-                        f"{leader['model']}.yaml",
-                    ]
-                ),
+                "mode_configs": PathJoinSubstitution([
+                    FindPackageShare("aloha"),
+                    "config",
+                    f"leader_modes_{leader['orientation']}.yaml",
+                ]),
+                "motor_configs": PathJoinSubstitution([
+                    FindPackageShare("interbotix_xsarm_control"),
+                    "config",
+                    f"{leader['model']}.yaml",
+                ]),
                 "use_rviz": "false",
-                "robot_description": Command(
-                    [
-                        FindExecutable(name="xacro"),
-                        " ",
-                        PathJoinSubstitution(
-                            [
-                                FindPackageShare(
-                                    "interbotix_xsarm_descriptions"),
-                                "urdf",
-                                f'{leader["model"]}.urdf.xacro',
-                            ]
-                        ),
-                        " ",
-                        "robot_name:=",
-                        leader["name"],
-                    ]
-                ),
+                "robot_description": Command([
+                    FindExecutable(name="xacro"),
+                    " ",
+                    PathJoinSubstitution([
+                        FindPackageShare("interbotix_xsarm_descriptions"),
+                        "urdf",
+                        f'{leader["model"]}.urdf.xacro',
+                    ]),
+                    " ",
+                    "robot_name:=",
+                    leader["name"],
+                ]),
             }.items(),
             condition=IfCondition(LaunchConfiguration("launch_leaders")),
         )
@@ -125,7 +116,7 @@ def launch_setup(context, *args, **kwargs):
             name=f'{leader["name"]}_transform_broadcaster',
             arguments=[
                 *map(str, leader["transform"]),  # Transform values from YAML
-                "/world",  # Parent frame
+                "/world",                        # Parent frame
                 f'/{leader["name"]}/base_link',  # Child frame
             ],
         )
@@ -139,18 +130,18 @@ def launch_setup(context, *args, **kwargs):
             namespace=leader["name"],
             parameters=[
                 {
-                    "motor_specs": PathJoinSubstitution(
-                        [
-                            FindPackageShare("aloha"),
-                            "config",
-                            f"leader_motor_specs_{leader['orientation']}.yaml",
-                        ]
-                    )
+                    "motor_specs": PathJoinSubstitution([
+                        FindPackageShare("aloha"),
+                        "config",
+                        f"leader_motor_specs_{leader['orientation']}.yaml",
+                    ])
                 }
             ],
             output="screen",
-            condition=IfCondition(LaunchConfiguration(
-                "use_gravity_compensation")),
+            condition=AndCondition([
+                IfCondition(LaunchConfiguration("use_gravity_compensation")),
+                IfCondition(LaunchConfiguration("launch_leaders"))
+            ]),
         )
         nodes.append(gravity_compensation_node)
 
@@ -159,44 +150,44 @@ def launch_setup(context, *args, **kwargs):
         # Launch follower arm node
         xsarm_control_follower_launch_include = IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
-                    PathJoinSubstitution([
-                            FindPackageShare("interbotix_xsarm_control"),
-                            "launch",
-                            "xsarm_control.launch.py",
-                        ])
-                ]),
+                PathJoinSubstitution([
+                    FindPackageShare("interbotix_xsarm_control"),
+                    "launch",
+                    "xsarm_control.launch.py",
+                ])
+            ]),
             launch_arguments={
                 "robot_model": follower["model"],
                 "robot_name": follower["name"],
                 "mode_configs": PathJoinSubstitution([
-                        FindPackageShare("aloha"),
-                        "config",
-                        f"follower_modes_{follower['orientation']}.yaml",
-                    ]),
+                    FindPackageShare("aloha"),
+                    "config",
+                    f"follower_modes_{follower['orientation']}.yaml",
+                ]),
                 "motor_configs": PathJoinSubstitution([
-                        FindPackageShare("interbotix_xsarm_control"),
-                        "config",
-                        f"{follower['model']}.yaml",
-                    ]),
+                    FindPackageShare("interbotix_xsarm_control"),
+                    "config",
+                    f"{follower['model']}.yaml",
+                ]),
                 "use_rviz": "false",
                 "robot_description": Command([
-                        FindExecutable(name="xacro"),
-                        " ",
-                        PathJoinSubstitution(
-                            [
-                                FindPackageShare(
-                                    "interbotix_xsarm_descriptions"),
-                                "urdf",
-                                f'{follower["model"]}.urdf.xacro',
-                            ]
-                        ),
-                        " ",
-                        "robot_name:=",
-                        follower["name"],
+                    FindExecutable(name="xacro"),
+                    " ",
+                    PathJoinSubstitution([
+                        FindPackageShare("interbotix_xsarm_descriptions"),
+                        "urdf",
+                        f'{follower["model"]}.urdf.xacro',
                     ]),
+                    " ",
+                    "robot_name:=",
+                    follower["name"],
+                ]),
             }.items(),
-            condition=IfCondition(LaunchConfiguration("launch_followers")),
+            condition=IfCondition(
+                LaunchConfiguration("launch_followers")
+            ),
         )
+
         nodes.append(xsarm_control_follower_launch_include)
 
         # Add transform broadcaster for follower arm
@@ -206,10 +197,11 @@ def launch_setup(context, *args, **kwargs):
             name=f'{follower["name"]}_transform_broadcaster',
             arguments=[
                 *map(str, follower["transform"]),  # Transform values from YAML
-                "/world",  # Parent frame
+                "/world",                          # Parent frame
                 f'/{follower["name"]}/base_link',  # Child frame
             ],
         )
+
         nodes.append(follower_transform_broadcaster)
 
     arms_group_action = GroupAction(
@@ -227,21 +219,21 @@ def launch_setup(context, *args, **kwargs):
         camera_params = common_params.copy()
         camera_params.update(
             {
+                # Serial number or default
                 "serial_no": camera.get("serial_no", ""),
-                # Use the camera's reset flag or default to True
+                # Reset flag, default to True
                 "initial_reset": camera.get("initial_reset", True),
             }
         )
 
-        # Create a node for each camera using the name and settings from the YAML
+        # Create a node for each camera with parameters from YAML
         rs_actions.append(
             Node(
                 package="realsense2_camera",
-                namespace=camera["name"],  # Namespace from YAML
+                namespace=camera["name"],  # Namespace based on camera name
                 name="camera",
                 executable="realsense2_camera_node",
-                # Directly use the parameters from YAML
-                parameters=[camera_params],
+                parameters=[camera_params],  # Apply merged parameters
                 output="screen",
             )
         )
@@ -253,7 +245,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     base_nodes = []
-    
+
     # Check if base is enabled in the YAML configuration
     if config.get("base", False):
         # Launch the base nodes
@@ -319,11 +311,35 @@ def launch_setup(context, *args, **kwargs):
 
     loginfo_action = LogInfo(
         msg=[
-            "\nBringing up ALOHA with the following launch configurations: ",
-            "\n- launch_leaders: ",
-            LaunchConfiguration("launch_leaders"),
-            "\n- use_cameras: ",
-            LaunchConfiguration("use_cameras"),
+            "\n==== Launching ALOHA Robot Setup ====\n",
+            "\nRobot Configuration:",
+            "\n- Selected robot configuration file: ", LaunchConfiguration(
+                "robot"),
+            "\n\nArm Launch Configurations:",
+            "\n- Launch leader arms: ", LaunchConfiguration("launch_leaders"),
+            "\n- Launch follower arms: ", LaunchConfiguration(
+                "launch_followers"),
+
+            "\n\nCamera Configuration:",
+            "\n- Enable cameras: ", LaunchConfiguration("use_cameras"),
+            "\n- Cameras to be launched (from configuration): ", ", ".join(
+                [camera["name"] for camera in config.get(
+                    "cameras", {}).get("camera_instances", [])]
+            ),
+
+            "\n\nBase Configuration:",
+            "\n- Base enabled: ", "true" if config.get(
+                "base", False) else "false",
+
+            "\n\nAdditional Configurations:",
+            "\n- Use gravity compensation: ", LaunchConfiguration(
+                "use_gravity_compensation"),
+            "\n- Use RViz for visualization: ", LaunchConfiguration(
+                "use_aloha_rviz"),
+            "\n- RViz configuration file: ", LaunchConfiguration(
+                "aloha_rvizconfig"),
+
+            "\n\n==== End of Launch Configuration ====\n"
         ]
     )
 

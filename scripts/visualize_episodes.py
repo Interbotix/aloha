@@ -15,7 +15,7 @@ STATE_NAMES = JOINT_NAMES + ['gripper']
 BASE_STATE_NAMES = ['linear_vel', 'angular_vel']
 
 
-def load_hdf5(dataset_dir, dataset_name, IS_MOBILE):
+def load_hdf5(dataset_dir, dataset_name, is_mobile):
     dataset_path = os.path.join(dataset_dir, dataset_name + '.hdf5')
     if not os.path.isfile(dataset_path):
         print(f'Dataset does not exist at \n{dataset_path}\n')
@@ -30,7 +30,7 @@ def load_hdf5(dataset_dir, dataset_name, IS_MOBILE):
         else:
             effort = None
         action = root['/action'][()]
-        if IS_MOBILE:
+        if is_mobile:
             base_action = root['/base_action'][()]
         else:
             base_action = None
@@ -64,8 +64,8 @@ def main(args):
 
     config = load_yaml_file('robot', robot_base).get('robot', {})
 
-    IS_MOBILE = config.get('base', False)
-    DT = 1/config.get('fps', 50)
+    is_mobile = config.get('base', False)
+    dt = 1/config.get('fps', 50)
 
     ismirror = args['ismirror']
     if ismirror:
@@ -74,11 +74,11 @@ def main(args):
         dataset_name = f'episode_{episode_idx}'
 
     qpos, _, _, action, base_action, image_dict = load_hdf5(
-        dataset_dir, dataset_name, IS_MOBILE)
+        dataset_dir, dataset_name, is_mobile)
     print('hdf5 loaded!')
     save_videos(
         image_dict,
-        DT,
+        dt,
         video_path=os.path.join(dataset_dir, dataset_name + '_video.mp4')
     )
     visualize_joints(
@@ -86,7 +86,7 @@ def main(args):
         action,
         plot_path=os.path.join(dataset_dir, dataset_name + '_qpos.png')
     )
-    if IS_MOBILE:
+    if is_mobile:
         visualize_base(
             base_action,
             plot_path=os.path.join(

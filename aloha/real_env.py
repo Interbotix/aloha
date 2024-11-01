@@ -87,8 +87,11 @@ class RealEnv:
                 iterative_update_fk=False,
             )
 
-        self.follower_bots = {name: robot for name,
-                              robot in self.robots.items() if 'follower' in name}
+        self.follower_bots = [robot for name,
+                              robot in self.robots.items() if 'follower' in name]
+
+        self.follower_robots = {name: robot for name,
+                                robot in self.robots.items() if 'follower' in name}
 
         self.is_mobile = config.get('base', False)
 
@@ -104,7 +107,7 @@ class RealEnv:
             else:
                 raise ValueError((
                     'Requested to set up base but robot is not mobile. '
-                    "Hint: check the 'IS_MOBILE' constant."
+                    "Hint: Update the robot config file to enable the base."
                 ))
 
     def setup_base(self, node: InterbotixRobotNode, torque_enable: bool = False):
@@ -207,11 +210,11 @@ class RealEnv:
 
         # Move arms for all follower robots
         move_arms(
-            bot_list=self.follower_robots,
+            bot_list=self.follower_bots,
             # Repeat reset_position for each robot
-            target_pose_list=[reset_position] * len(self.follower_robots),
+            target_pose_list=[reset_position] * len(self.follower_bots),
             moving_time=1.0,
-            DT=self.DT
+            dt=self.DT
         )
 
     def _reset_gripper(self):
@@ -223,20 +226,20 @@ class RealEnv:
 
         # Open the grippers for all follower robots
         move_grippers(
-            self.follower_robots,
+            self.follower_bots,
             [FOLLOWER_GRIPPER_JOINT_OPEN] *
-            len(self.follower_robots),  # Set to open for all robots
+            len(self.follower_bots),  # Set to open for all robots
             moving_time=0.5,
-            DT=self.DT
+            dt=self.DT
         )
 
         # Close the grippers for all follower robots
         move_grippers(
-            self.follower_robots,
+            self.follower_bots,
             [FOLLOWER_GRIPPER_JOINT_CLOSE] *
-            len(self.follower_robots),  # Set to close for all robots
+            len(self.follower_bots),  # Set to close for all robots
             moving_time=1.0,
-            DT=self.DT
+            dt=self.DT
         )
 
     def get_observation(self):
@@ -252,14 +255,14 @@ class RealEnv:
     def get_reward(self):
         return 0
 
-    def reset(self):
-
-        # Reboot gripper motors for all follower robots dynamically
-        for robot_name, robot in self.robots.items():
-            if 'follower' in robot_name:
-                robot.core.robot_reboot_motors('single', 'gripper', True)
-        self._reset_joints()
-        self._reset_gripper()
+    def reset(self, fake=False):
+        if not fake:
+            # Reboot gripper motors for all follower robots dynamically
+            for robot_name, robot in self.robots.items():
+                if 'follower' in robot_name:
+                    robot.core.robot_reboot_motors('single', 'gripper', True)
+            self._reset_joints()
+            self._reset_gripper()
         return dm_env.TimeStep(
             step_type=dm_env.StepType.FIRST,
             reward=self.get_reward(),
@@ -270,11 +273,11 @@ class RealEnv:
     def step(self, action, base_action=None, get_obs=True):
 
         # Dynamically calculate per-bot state length
-        state_len = int(len(action) / len(self.follower_bots))
+        state_len = int(len(action) / len(self.follower_robots))
         index = 0
 
         # Iterate through each follower bot and set joint positions
-        for name, robot in self.follower_bots.items():
+        for name, robot in self.follower_robots.items():
             bot_action = action[index:index + state_len]
             robot.arm.set_joint_positions(
                 bot_action[:6], blocking=False)  # Set arm positions
@@ -319,7 +322,7 @@ def get_action(robots: dict):
 
 def make_real_env(
     node: InterbotixRobotNode = None,
-            observation=obs,
+    setup_robots: bool = True,
     setup_base: bool = False,
     torque_base: bool = False,
     config: dict = None,

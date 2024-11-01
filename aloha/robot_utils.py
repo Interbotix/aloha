@@ -11,6 +11,7 @@ from interbotix_xs_modules.xs_robot.gravity_compensation import (
 )
 from interbotix_xs_msgs.msg import JointGroupCommand, JointSingleCommand
 import numpy as np
+from pathlib import Path
 from rclpy.node import Node
 from sensor_msgs.msg import Image, JointState
 
@@ -267,7 +268,7 @@ def load_yaml_file(config_type: str = "robot", name: str = "aloha_static") -> di
     """
 
     # Base path of the config directory using absolute path
-    base_path = os.path.abspath(os.path.join("..", "config"))
+    base_path = Path(__file__).resolve().parent.parent / "config"
 
     # Set the YAML file path based on the configuration type
     if config_type == "robot":

@@ -102,7 +102,7 @@ def main(args: Dict[str, any]) -> None:
     gripper_positions = [FOLLOWER_GRIPPER_JOINT_OPEN] * len(follower_bots)
 
     # Move follower grippers to open position
-    move_grippers(follower_bots, gripper_positions, moving_time=0.5, DT=DT)
+    move_grippers(follower_bots, gripper_positions, moving_time=0.5, dt=DT)
     robot_shutdown(node)
 
 

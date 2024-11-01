@@ -95,7 +95,7 @@ def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS], gravity_compens
             bot_list=[leader_bot, follower_bot],
             target_pose_list=[start_arm_qpos] * 2,
             moving_time=4.0,
-            DT=dt,
+            dt=dt,
         )
 
         # Move both leader and follower grippers to the starting position
@@ -103,7 +103,7 @@ def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS], gravity_compens
             [leader_bot, follower_bot],
             [LEADER_GRIPPER_JOINT_MID, FOLLOWER_GRIPPER_JOINT_CLOSE],
             moving_time=0.5,
-            DT=dt,
+            dt=dt,
         )
 
     # Prepare to start data collection by disabling leader gripper torque and waiting for input
@@ -218,7 +218,7 @@ def capture_one_episode(
         list(follower_bots.values()),
         [FOLLOWER_GRIPPER_JOINT_OPEN] * len(follower_bots),
         moving_time=0.5,
-        DT=DT,
+        dt=DT,
     )
 
     # Check the frequency of data collection for quality assurance

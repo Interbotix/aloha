@@ -44,7 +44,7 @@ def main() -> None:
     config = load_yaml_file('robot', robot_base).get('robot', {})
 
     # Calculate time step for movement based on FPS from config
-    DT = 1 / config.get('fps', 50)
+    dt = 1 / config.get('fps', 50)
 
     # Create a global ROS node
     node = create_interbotix_global_node('aloha')
@@ -91,7 +91,7 @@ def main() -> None:
         torque_on(bot)
 
     # Move selected bots to their sleep positions
-    sleep_arms(bots_to_sleep, home_first=True, DT=DT)
+    sleep_arms(bots_to_sleep, home_first=True, dt=dt)
 
     # Perform robot shutdown actions
     robot_shutdown(node)
