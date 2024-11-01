@@ -6,7 +6,7 @@ from aloha.robot_utils import (
     sleep_arms,
     torque_on,
     disable_gravity_compensation,
-    load_yaml_file
+    load_yaml_file,
 )
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
@@ -98,4 +98,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    print("New Changes")
     main()

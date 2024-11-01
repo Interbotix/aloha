@@ -16,7 +16,7 @@ from aloha.robot_utils import (
     FOLLOWER_GRIPPER_POSITION_NORMALIZE_FN,
     FOLLOWER_GRIPPER_VELOCITY_NORMALIZE_FN,
     LEADER_GRIPPER_JOINT_NORMALIZE_FN,
-    START_ARM_POSE
+    START_ARM_POSE,
 )
 
 import dm_env
@@ -40,7 +40,7 @@ class RealEnv:
         setup_robots: bool = True,
         setup_base: bool = False,
         torque_base: bool = False,
-        config: dict = None
+        config: dict = None,
     ):
         """
         Initialize the Real Robot Environment.
@@ -56,7 +56,7 @@ class RealEnv:
         """
         self.is_mobile = config.get('base', False)
 
-        self.DT = 1 / config.get('fps', 30)
+        self.dt = 1 / config.get('fps', 30)
 
         # Dynamically import module based on config value
         if self.is_mobile:
@@ -87,11 +87,13 @@ class RealEnv:
                 iterative_update_fk=False,
             )
 
+        # Raise an error if no robots were added to the dictionary
+        if not self.robots:
+            raise ValueError(
+                "No robots were initialized. Check YAML configuration for 'leader_arms' and 'follower_arms'.")
+
         self.follower_bots = [robot for name,
                               robot in self.robots.items() if 'follower' in name]
-
-        self.follower_robots = {name: robot for name,
-                                robot in self.robots.items() if 'follower' in name}
 
         self.is_mobile = config.get('base', False)
 
@@ -133,13 +135,13 @@ class RealEnv:
         # Iterate through all follower robots in the self.robots dictionary
         for name, bot in self.robots.items():
             if "follower" in name:
-                # Get the arm joint positions (first 6 joints)
-                arm_qpos = bot.core.joint_states.position[:6]
+                # Get the arm joint positions
+                arm_qpos = bot.arm.get_joint_positions()
                 qpos_list.append(arm_qpos)
 
-                # Get the gripper joint position (7th joint) and normalize it
+                # Get the gripper joint position and normalize it
                 gripper_qpos = [FOLLOWER_GRIPPER_POSITION_NORMALIZE_FN(
-                    bot.core.joint_states.position[7])]
+                    bot.gripper.get_gripper_position())]
                 qpos_list.append(gripper_qpos)
 
         # Concatenate all the positions into a single array
@@ -152,30 +154,39 @@ class RealEnv:
         # Iterate through all follower robots in the self.robots dictionary
         for name, bot in self.robots.items():
             if "follower" in name:
-                # Get the arm joint velocities (first 6 joints)
-                arm_qvel = bot.core.joint_states.velocity[:6]
+                # Get the arm joint velocities
+                arm_qvel = bot.arm.get_joint_velocities()
                 qvel_list.append(arm_qvel)
 
-                # Get the gripper joint velocity (7th joint) and normalize it
+                # Get the gripper joint velocity and normalize it
                 gripper_qvel = [FOLLOWER_GRIPPER_VELOCITY_NORMALIZE_FN(
-                    bot.core.joint_states.velocity[6])]
+                    bot.gripper.get_gripper_velocity())]
                 qvel_list.append(gripper_qvel)
 
         # Concatenate all the velocities into a single array
         return np.concatenate(qvel_list)
 
     def get_effort(self):
+        """
+        Gather and concatenate efforts for all follower robots' arms and grippers.
+
+        Returns:
+            np.ndarray: Array of concatenated efforts for arms and grippers.
+        """
         # Initialize a list to hold the efforts for all arms and grippers
         effort_list = []
 
         # Iterate through all follower robots in the self.robots dictionary
         for name, bot in self.robots.items():
             if "follower" in name:
-                # Get the first 7 effort values (6 for arm, 1 for gripper)
-                robot_effort = bot.core.joint_states.effort[:7]
-                effort_list.append(robot_effort)
+                # Get the effort values for arm and gripper, wrapping gripper effort in a list
+                arm_effort = bot.arm.get_joint_efforts()            # Array of arm joint efforts
+                gripper_effort = [bot.gripper.get_gripper_effort()] # Wrap single float in list
+                # Append both arm and gripper efforts to the effort_list
+                effort_list.append(arm_effort)
+                effort_list.append(gripper_effort)
 
-        # Concatenate all the efforts into a single array
+        # Concatenate all efforts into a single array
         return np.concatenate(effort_list)
 
     def get_images(self):
@@ -213,8 +224,7 @@ class RealEnv:
             bot_list=self.follower_bots,
             # Repeat reset_position for each robot
             target_pose_list=[reset_position] * len(self.follower_bots),
-            moving_time=1.0,
-            dt=self.DT
+            dt=self.dt,
         )
 
     def _reset_gripper(self):
@@ -230,7 +240,7 @@ class RealEnv:
             [FOLLOWER_GRIPPER_JOINT_OPEN] *
             len(self.follower_bots),  # Set to open for all robots
             moving_time=0.5,
-            dt=self.DT
+            dt=self.dt,
         )
 
         # Close the grippers for all follower robots
@@ -239,7 +249,7 @@ class RealEnv:
             [FOLLOWER_GRIPPER_JOINT_CLOSE] *
             len(self.follower_bots),  # Set to close for all robots
             moving_time=1.0,
-            dt=self.DT
+            dt=self.dt,
         )
 
     def get_observation(self):
@@ -272,15 +282,18 @@ class RealEnv:
 
     def step(self, action, base_action=None, get_obs=True):
 
+        follower_robots = {name: robot for name,
+                           robot in self.robots.items() if 'follower' in name}
+
         # Dynamically calculate per-bot state length
-        state_len = int(len(action) / len(self.follower_robots))
+        state_len = int(len(action) / len(follower_robots))
         index = 0
 
         # Iterate through each follower bot and set joint positions
-        for name, robot in self.follower_robots.items():
+        for name, robot in follower_robots.items():
             bot_action = action[index:index + state_len]
             robot.arm.set_joint_positions(
-                bot_action[:6], blocking=False)  # Set arm positions
+                bot_action[:-1], blocking=False)  # Set arm positions
             self.set_gripper_pose(name, bot_action[-1])  # Set gripper position
             index += state_len
 
@@ -300,22 +313,25 @@ class RealEnv:
         )
 
 
-def get_action(robots: dict):
+def get_action(robots: dict[str, InterbotixManipulatorXS]):
     leader_bots = {name: robot for name,
                    robot in robots.items() if 'leader' in name}
 
-    num_leader_bots = len(leader_bots)
-    # 6 joint positions + 1 gripper for each leader bot
-    action = np.zeros(num_leader_bots * 7)
+    # Dynamically determine the number of joints based on the first leader bot
+    num_arm_joints = next(iter(leader_bots.values())).arm.group_info.num_joints
+    total_joints_per_robot = num_arm_joints + 1  # +1 for the gripper position
+
+    # Initialize the action array for all leader bots
+    action = np.zeros(len(leader_bots) * total_joints_per_robot)
 
     index = 0
-    for robot_name, robot in leader_bots.items():
-        # Arm actions (first 6 positions)
-        action[index:index+6] = robot.core.joint_states.position[:6]
-        # Gripper action (7th position)
-        action[index+6] = LEADER_GRIPPER_JOINT_NORMALIZE_FN(
-            robot.core.joint_states.position[6])
-        index += 7
+    for robot in leader_bots.values():
+        # Arm actions
+        action[index:index+num_arm_joints] = robot.arm.get_joint_positions()
+        # Gripper action
+        action[index+num_arm_joints] = LEADER_GRIPPER_JOINT_NORMALIZE_FN(
+            robot.gripper.get_gripper_position())
+        index += total_joints_per_robot
 
     return action
 
@@ -388,9 +404,9 @@ def test_real_teleop():
 
         if onscreen_render:
             plt_img.set_data(ts.observation['images'][render_cam])
-            plt.pause(env.DT)
+            plt.pause(env.dt)
         else:
-            time.sleep(env.DT)
+            time.sleep(env.dt)
 
 
 if __name__ == '__main__':

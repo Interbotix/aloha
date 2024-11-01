@@ -31,7 +31,7 @@ class ImageRecorder:
         self.camera_names = [camera['name']
                              for camera in camera_config.get('camera_instances', [])]
 
-        color_image_topic_name = config.get('cameras', {}).get(
+        color_image_topic_name = camera_config.get(
             'common_parameters', {}).get('color_image_topic_name', None)
 
         # Dynamically create attributes and subscriptions for each camera
@@ -98,11 +98,11 @@ class ImageRecorder:
 
 
 def get_arm_joint_positions(bot: InterbotixManipulatorXS):
-    return bot.arm.core.joint_states.position[:6]
+    return bot.arm.get_joint_positions()
 
 
 def get_arm_gripper_positions(bot: InterbotixManipulatorXS):
-    joint_position = bot.gripper.core.joint_states.position[6]
+    joint_position = bot.gripper.get_gripper_position()
     return joint_position
 
 

@@ -39,7 +39,7 @@ def main(args: Dict[str, any]) -> None:
     is_mobile = config.get('base', False)
 
     # Set the timestep duration for the environment update frequency
-    DT = 1 / config.get('fps', 50)
+    dt = 1 / config.get('fps', 50)
 
     # Construct dataset path
     dataset_dir = args['dataset_dir']
@@ -86,12 +86,12 @@ def main(args: Dict[str, any]) -> None:
         for action, base_action in zip(actions, base_actions):
             time1 = time.time()
             env.step(action, base_action)
-            time.sleep(max(0, DT - (time.time() - time1)))
+            time.sleep(max(0, dt - (time.time() - time1)))
     else:
         for action in actions:
             time1 = time.time()
             env.step(action, None)
-            time.sleep(max(0, DT - (time.time() - time1)))
+            time.sleep(max(0, dt - (time.time() - time1)))
 
     # Print average frames per second
     print(f'Avg fps: {len(actions) / (time.time() - time0)}')
@@ -102,7 +102,7 @@ def main(args: Dict[str, any]) -> None:
     gripper_positions = [FOLLOWER_GRIPPER_JOINT_OPEN] * len(follower_bots)
 
     # Move follower grippers to open position
-    move_grippers(follower_bots, gripper_positions, moving_time=0.5, dt=DT)
+    move_grippers(follower_bots, gripper_positions, moving_time=0.5, dt=dt)
     robot_shutdown(node)
 
 

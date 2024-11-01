@@ -30,7 +30,9 @@ from rclpy.constants import S_TO_NS
 from typing import Dict
 
 
-def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS], dt: float) -> None:
+def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS],
+                     dt: float,
+                     ) -> None:
     """
     Move all leader-follower pairs of robots to a starting pose for demonstration.
 
@@ -43,24 +45,33 @@ def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS], dt: float) -> N
     follower_bots = {name: bot for name,
                      bot in robots.items() if 'follower' in name}
 
-    # Define pairs for leader and follower bots based on naming convention
+    # Initialize an empty list to store matched pairs of leader and follower robots
     pairs = []
 
-    # Check for common suffixes (_left, _right, _solo)
-    for leader_name, leader_bot in leader_bots.items():
-        for suffix in ['_left', '_right', '_solo']:
-            if leader_name.endswith(suffix):
-                follower_name = f"follower{suffix}"
-                if follower_name in follower_bots:
-                    pairs.append((leader_bot, follower_bots[follower_name]))
-                break
-        else:
-            # Handle case if no specific suffix is found, just pair remaining leader and follower
-            if follower_bots:
-                follower_bot_name, follower_bot = follower_bots.popitem()
-                pairs.append((leader_bot, follower_bot))
+    # Create dictionaries mapping suffixes to leader and follower robots
+    leader_suffixes = {name.split(
+        '_', 1)[1]: bot for name, bot in leader_bots.items()}
+    follower_suffixes = {name.split(
+        '_', 1)[1]: bot for name, bot in follower_bots.items()}
 
-    # Ensure at least one pair of leader and follower bots
+    # Pair leader and follower robots based on matching suffixes
+    for suffix, leader_bot in leader_suffixes.items():
+        if suffix in follower_suffixes:
+            # If matching follower exists, pair it with the leader
+            follower_bot = follower_suffixes.pop(suffix)
+            pairs.append((leader_bot, follower_bot))
+        else:
+            # Raise an error if there’s an unmatched leader suffix
+            raise ValueError(
+                f"Unmatched leader suffix '{suffix}' found. Every leader should have a corresponding follower with the same suffix.")
+
+    # Check if any unmatched followers remain after pairing
+    if follower_suffixes:
+        unmatched_suffixes = ', '.join(follower_suffixes.keys())
+        raise ValueError(
+            f"Unmatched follower suffix(es) found: {unmatched_suffixes}. Every follower should have a corresponding leader with the same suffix.")
+
+    # Ensure at least one leader-follower pair was created
     if not pairs:
         raise ValueError(
             "No valid leader-follower pairs found in the robot dictionary.")
@@ -88,7 +99,7 @@ def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS], dt: float) -> N
             bot_list=[leader_bot, follower_bot],
             dt=dt,
             target_pose_list=[start_arm_qpos] * 2,
-            moving_time=4.0
+            moving_time=4.0,
         )
 
         # Move grippers to starting position
@@ -96,11 +107,14 @@ def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS], dt: float) -> N
             [leader_bot, follower_bot],
             [LEADER_GRIPPER_JOINT_MID, FOLLOWER_GRIPPER_JOINT_CLOSE],
             moving_time=0.5,
-            dt=dt
+            dt=dt,
         )
 
 
-def press_to_start(robots: Dict[str, InterbotixManipulatorXS], dt: float, gravity_compensation: bool) -> None:
+def press_to_start(robots: Dict[str, InterbotixManipulatorXS],
+                   dt: float,
+                   gravity_compensation: bool,
+                   ) -> None:
     """
     Wait for the user to close the grippers on all leader robots to start teleoperation.
 
@@ -196,14 +210,14 @@ def main(args: dict) -> None:
 
                 if follower_bot:
                     # Sync arm joint positions and gripper positions
-                    leader_state_joints = leader_bot.core.joint_states.position[:6]
+                    leader_state_joints = leader_bot.arm.get_joint_positions()
                     follower_bot.arm.set_joint_positions(
                         leader_state_joints, blocking=False)
 
                     # Sync gripper positions
                     gripper_command = gripper_commands[follower_name]
                     gripper_command.cmd = LEADER2FOLLOWER_JOINT_FN(
-                        leader_bot.core.joint_states.position[6]
+                        leader_bot.gripper.get_gripper_position()
                     )
                     follower_bot.gripper.core.pub_single.publish(
                         gripper_command)
@@ -216,6 +230,7 @@ def main(args: dict) -> None:
 
 
 if __name__ == '__main__':
+    print("New Changes")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-g', '--gravity_compensation',

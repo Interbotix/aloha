@@ -51,24 +51,29 @@ def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS], gravity_compens
     # Initialize an empty list to store matched pairs of leader and follower robots
     pairs = []
 
-    # Match leader and follower robots based on common suffixes (_left, _right, _solo)
-    for leader_name, leader_bot in leader_bots.items():
-        for suffix in ["_left", "_right", "_solo"]:
-            if leader_name.endswith(suffix):
-                follower_name = f"follower{suffix}"
-                if follower_name in follower_bots:
-                    pairs.append((leader_bot, follower_bots[follower_name]))
-                break
-        else:
-            # Pair remaining leader and follower robots if no suffix match is found
-            if follower_bots:
-                _, follower_bot = follower_bots.popitem()
-                pairs.append((leader_bot, follower_bot))
+    # Create dictionaries mapping suffixes to leader and follower robots
+    leader_suffixes = {name.split('_', 1)[1]: bot for name, bot in leader_bots.items()}
+    follower_suffixes = {name.split('_', 1)[1]: bot for name, bot in follower_bots.items()}
 
-    # Check that at least one leader-follower pair is found
+    # Pair leader and follower robots based on matching suffixes
+    for suffix, leader_bot in leader_suffixes.items():
+        if suffix in follower_suffixes:
+            # If matching follower exists, pair it with the leader
+            follower_bot = follower_suffixes.pop(suffix)
+            pairs.append((leader_bot, follower_bot))
+        else:
+            # Raise an error if there’s an unmatched leader suffix
+            raise ValueError(f"Unmatched leader suffix '{suffix}' found. Every leader should have a corresponding follower with the same suffix.")
+
+    # Check if any unmatched followers remain after pairing
+    if follower_suffixes:
+        unmatched_suffixes = ', '.join(follower_suffixes.keys())
+        raise ValueError(f"Unmatched follower suffix(es) found: {unmatched_suffixes}. Every follower should have a corresponding leader with the same suffix.")
+
+    # Ensure at least one leader-follower pair was created
     if not pairs:
-        raise ValueError(
-            "No valid leader-follower pairs found in the robot dictionary.")
+        raise ValueError("No valid leader-follower pairs found in the robot dictionary.")
+
 
     # Initialize each pair by setting their operating modes and moving to start positions
     for leader_bot, follower_bot in pairs:

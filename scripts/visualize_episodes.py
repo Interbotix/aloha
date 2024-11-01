@@ -65,6 +65,7 @@ def main(args):
     config = load_yaml_file('robot', robot_base).get('robot', {})
 
     is_mobile = config.get('base', False)
+
     dt = 1/config.get('fps', 50)
 
     ismirror = args['ismirror']
@@ -79,18 +80,19 @@ def main(args):
     save_videos(
         image_dict,
         dt,
-        video_path=os.path.join(dataset_dir, dataset_name + '_video.mp4')
+        video_path=os.path.join(dataset_dir, dataset_name + '_video.mp4'),
     )
     visualize_joints(
         qpos,
         action,
-        plot_path=os.path.join(dataset_dir, dataset_name + '_qpos.png')
+        plot_path=os.path.join(dataset_dir, dataset_name + '_qpos.png'),
+        config=config,
     )
     if is_mobile:
         visualize_base(
             base_action,
             plot_path=os.path.join(
-                dataset_dir, dataset_name + '_base_action.png')
+                dataset_dir, dataset_name + '_base_action.png'),
         )
 
 
@@ -132,7 +134,14 @@ def save_videos(video, dt, video_path=None):
         print(f'Saved video to: {video_path}')
 
 
-def visualize_joints(qpos_list, command_list, plot_path=None, ylim=None, label_overwrite=None):
+def visualize_joints(qpos_list,
+                     command_list,
+                     plot_path=None,
+                     ylim=None,
+                     label_overwrite=None,
+                     config: dict = {},
+                     ):
+
     if label_overwrite:
         label1, label2 = label_overwrite
     else:
@@ -145,11 +154,23 @@ def visualize_joints(qpos_list, command_list, plot_path=None, ylim=None, label_o
     num_figs = num_dim
     fig, axs = plt.subplots(num_figs, 1, figsize=(8, 2 * num_dim))
 
-    # plot joint state
-    all_names = (
-        [f'{name}_left' for name in STATE_NAMES] +
-        [f'{name}_right' for name in STATE_NAMES]
-    )
+    leader_robots = {arm['name']: arm for arm in config.get('leader_arms', [])}
+    follower_robots = {arm['name']: arm for arm in config.get('follower_arms', [])}
+
+    # Initialize an empty list to store matched suffixes
+    valid_suffixes = []
+
+    # Identify valid suffixes from paired robots
+    for leader_name in leader_robots.keys():
+        # Extract suffix after first underscore
+        suffix = leader_name.split('_', 1)[1]
+        if f"follower_{suffix}" in follower_robots:
+            valid_suffixes.append(suffix)
+
+    # Create all_names based on valid suffixes
+    all_names = [
+        f"{name}_{suffix}" for name in STATE_NAMES for suffix in valid_suffixes]
+
     for dim_idx in range(num_dim):
         ax = axs[dim_idx]
         ax.plot(qpos[:, dim_idx], label=label1)
@@ -173,18 +194,30 @@ def visualize_joints(qpos_list, command_list, plot_path=None, ylim=None, label_o
     plt.close()
 
 
-def visualize_single(efforts_list, label, plot_path=None, ylim=None, label_overwrite=None):
+def visualize_single(efforts_list, label, plot_path=None, ylim=None, label_overwrite=None, config: dict = {}):
     efforts = np.array(efforts_list)  # ts, dim
     num_ts, num_dim = efforts.shape
     h, w = 2, num_dim
     num_figs = num_dim
     fig, axs = plt.subplots(num_figs, 1, figsize=(w, h * num_figs))
 
-    # plot joint state
-    all_names = (
-        [name + '_left' for name in STATE_NAMES] +
-        [name + '_right' for name in STATE_NAMES]
-    )
+    leader_robots = {arm['name']: arm for arm in config.get('leader_arms', [])}
+    follower_robots = {arm['name']: arm for arm in config.get('follower_arms', [])}
+
+    # Initialize an empty list to store matched suffixes
+    valid_suffixes = []
+
+    # Identify valid suffixes from paired robots
+    for leader_name in leader_robots.keys():
+        # Extract suffix after first underscore
+        suffix = leader_name.split('_', 1)[1]
+        if f"follower_{suffix}" in follower_robots:
+            valid_suffixes.append(suffix)
+
+    # Create all_names based on valid suffixes
+    all_names = [
+        f"{name}_{suffix}" for name in STATE_NAMES for suffix in valid_suffixes]
+    
     for dim_idx in range(num_dim):
         ax = axs[dim_idx]
         ax.plot(efforts[:, dim_idx], label=label)
