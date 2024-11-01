@@ -15,7 +15,7 @@ tasks:
     # Path to the dataset storage directory
     dataset_dir: "~/aloha_data/aloha_mobile_dummy"  
     # Length of each episode in timesteps
-    episode_len: 1000                               
+    episode_len: 300                               
 
   # ----------------------------------------------------------------------------
   # Task: Aloha Stationary Dummy
