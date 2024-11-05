@@ -24,10 +24,13 @@ from interbotix_common_modules.common_robot.robot import (
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
+from pathlib import Path
 import rclpy
 from rclpy.duration import Duration
 from rclpy.constants import S_TO_NS
 from typing import Dict
+
+
 
 
 def opening_ceremony(robots: Dict[str, InterbotixManipulatorXS],
@@ -164,7 +167,11 @@ def main(args: dict) -> None:
 
     # Load robot configuration
     robot_base = args.get('robot', '')
-    config = load_yaml_file("robot", robot_base).get('robot', {})
+
+    # Base path of the config directory using absolute path
+    base_path = Path(__file__).resolve().parent.parent / "config"
+
+    config = load_yaml_file("robot", robot_base, base_path).get('robot', {})
     dt = 1 / config.get('fps', 30)
 
     # Initialize dictionary for robot instances
@@ -230,7 +237,6 @@ def main(args: dict) -> None:
 
 
 if __name__ == '__main__':
-    print("New Changes")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-g', '--gravity_compensation',

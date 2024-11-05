@@ -18,6 +18,8 @@ from interbotix_common_modules.common_robot.robot import (
     robot_shutdown,
     robot_startup,
 )
+from pathlib import Path
+
 
 # Define joint and gripper state names for tracking purposes
 STATE_NAMES = JOINT_NAMES + ['gripper', 'left_finger', 'right_finger']
@@ -35,7 +37,10 @@ def main(args: Dict[str, any]) -> None:
     """
     # Load robot configuration
     robot_base = args.get('robot', '')
-    config = load_yaml_file('robot', robot_base).get('robot', {})
+
+    base_path = Path(__file__).resolve().parent.parent / "config"
+
+    config = load_yaml_file('robot', robot_base, base_path).get('robot', {})
     is_mobile = config.get('base', False)
 
     # Set the timestep duration for the environment update frequency

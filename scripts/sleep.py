@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 
-import argparse
-from typing import Dict, Sequence
 from aloha.robot_utils import (
     sleep_arms,
     torque_on,
     disable_gravity_compensation,
     load_yaml_file,
 )
+import argparse
 from interbotix_common_modules.common_robot.robot import (
     create_interbotix_global_node,
     robot_shutdown,
     robot_startup,
 )
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
+from pathlib import Path
+from typing import Dict, Sequence
 
 
 def main() -> None:
@@ -41,7 +42,10 @@ def main() -> None:
 
     # Load robot configuration
     robot_base = args.robot
-    config = load_yaml_file('robot', robot_base).get('robot', {})
+
+    base_path = Path(__file__).resolve().parent.parent / "config"
+
+    config = load_yaml_file('robot', robot_base, base_path).get('robot', {})
 
     # Calculate time step for movement based on FPS from config
     dt = 1 / config.get('fps', 50)
@@ -98,5 +102,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    print("New Changes")
     main()

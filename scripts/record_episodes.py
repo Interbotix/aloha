@@ -28,6 +28,7 @@ from interbotix_common_modules.common_robot.robot import (
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 import numpy as np
 import os
+from pathlib import Path
 import rclpy
 import time
 from typing import Dict, List
@@ -246,8 +247,10 @@ def capture_one_episode(
     # Collect camera names from config and initialize image storage in data_dict
     camera_names = [camera["name"] for camera in config.get(
         "cameras", {}).get("camera_instances", [])]
-    for cam_name in camera_names:
-        data_dict[f"/observations/images/{cam_name}"] = []
+    
+    if camera_names:
+        for cam_name in camera_names:
+            data_dict[f"/observations/images/{cam_name}"] = []
 
     # Populate data_dict with recorded observations and actions
     while actions:
@@ -267,7 +270,7 @@ def capture_one_episode(
 
     # Optionally compress images and add padding for equal length
     COMPRESS = True
-    if COMPRESS:
+    if COMPRESS and camera_names:
         t0 = time.time()
         encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 50]
         compressed_len = []
@@ -305,12 +308,13 @@ def capture_one_episode(
         root.attrs["sim"] = False
         root.attrs["compress"] = COMPRESS
         obs = root.create_group("observations")
-        image_group = obs.create_group("images")
-        for cam_name in camera_names:
-            shape = (max_timesteps, padded_size) if COMPRESS else (
-                max_timesteps, 480, 640, 3)
-            _ = image_group.create_dataset(
-                cam_name, shape, dtype="uint8", chunks=(1, shape[1]))
+        if camera_names:
+            image_group = obs.create_group("images")
+            for cam_name in camera_names:
+                shape = (max_timesteps, padded_size) if COMPRESS else (
+                    max_timesteps, 480, 640, 3)
+                _ = image_group.create_dataset(
+                    cam_name, shape, dtype="uint8", chunks=(1, shape[1]))
 
         # Create datasets for joint positions, velocities, and efforts
         _ = obs.create_dataset("qpos", (max_timesteps, total_size))
@@ -324,7 +328,7 @@ def capture_one_episode(
         for name, array in data_dict.items():
             root[name][...] = array
 
-        if COMPRESS:
+        if COMPRESS and camera_names:
             _ = root.create_dataset(
                 "compress_len", (len(camera_names), max_timesteps))
             root["/compress_len"][...] = compressed_len
@@ -455,9 +459,12 @@ def main(args: Dict[str, any]) -> None:
     gravity_compensation = args.get("gravity_compensation", False)
     robot_base = args.get("robot", "")
 
+    base_path = Path(__file__).resolve().parent.parent / "config"
+
+
     # Load robot and task configurations from YAML files
-    config = load_yaml_file("robot", robot_base).get('robot', {})
-    task_config = load_yaml_file("task")
+    config = load_yaml_file("robot", robot_base, base_path).get('robot', {})
+    task_config = load_yaml_file("task", base_path=base_path)
     task = task_config["tasks"].get(args.get("task_name"))
 
     # Determine dataset directory and maximum timesteps
