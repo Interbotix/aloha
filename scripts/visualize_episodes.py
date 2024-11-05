@@ -9,6 +9,7 @@ import cv2
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 import yaml
 
 STATE_NAMES = JOINT_NAMES + ['gripper']
@@ -62,7 +63,9 @@ def main(args):
     episode_idx = args['episode_idx']
     robot_base = args['robot']
 
-    config = load_yaml_file('robot', robot_base).get('robot', {})
+    base_path = Path(__file__).resolve().parent.parent / "config"
+
+    config = load_yaml_file('robot', robot_base, base_path).get('robot', {})
 
     is_mobile = config.get('base', False)
 
@@ -169,7 +172,7 @@ def visualize_joints(qpos_list,
 
     # Create all_names based on valid suffixes
     all_names = [
-        f"{name}_{suffix}" for name in STATE_NAMES for suffix in valid_suffixes]
+        f"{name}_{suffix}" for suffix in valid_suffixes for name in STATE_NAMES]
 
     for dim_idx in range(num_dim):
         ax = axs[dim_idx]
@@ -202,7 +205,8 @@ def visualize_single(efforts_list, label, plot_path=None, ylim=None, label_overw
     fig, axs = plt.subplots(num_figs, 1, figsize=(w, h * num_figs))
 
     leader_robots = {arm['name']: arm for arm in config.get('leader_arms', [])}
-    follower_robots = {arm['name']: arm for arm in config.get('follower_arms', [])}
+    follower_robots = {arm['name']
+        : arm for arm in config.get('follower_arms', [])}
 
     # Initialize an empty list to store matched suffixes
     valid_suffixes = []
@@ -216,8 +220,8 @@ def visualize_single(efforts_list, label, plot_path=None, ylim=None, label_overw
 
     # Create all_names based on valid suffixes
     all_names = [
-        f"{name}_{suffix}" for name in STATE_NAMES for suffix in valid_suffixes]
-    
+        f"{name}_{suffix}" for suffix in valid_suffixes for name in STATE_NAMES]
+
     for dim_idx in range(num_dim):
         ax = axs[dim_idx]
         ax.plot(efforts[:, dim_idx], label=label)

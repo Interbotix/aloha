@@ -115,6 +115,4 @@ robot:
         serial_no: ""
 
   # Base configuration
-  base:
-    # Indicates whether a robot base is used (default: false for stationary robots)
-    enable: false
+  base: false

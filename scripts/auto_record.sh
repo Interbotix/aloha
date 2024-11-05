@@ -9,7 +9,7 @@ source $WORKSPACE_SETUP_PATH || exit 1
 
 print_usage() {
   echo "USAGE:"
-  echo "auto_record.sh task num_episodes [-b, --enable_base_torque] [-g, --gravity_compensation]"
+  echo "auto_record.sh task num_episodes robot_name [-b, --enable_base_torque] [-g, --gravity_compensation]"
 }
 
 nargs="$#"
@@ -29,7 +29,7 @@ echo "Task: $1"
 for (( i=0; i<$2; i++ ))
 do
   echo "Starting episode $i"
-  python3 "$RECORD_EPISODES" --task $1 $3 $4
+  python3 "$RECORD_EPISODES" --task $1 -r $3 $4 $5
   if [ $? -ne 0 ]; then
     echo "Failed to execute command. Returning"
     exit 1
