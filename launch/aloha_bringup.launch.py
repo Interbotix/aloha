@@ -359,8 +359,8 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "robot",
-            default_value="aloha_static",
-            description="Name of the robot configuration file (e.g., aloha_static, aloha_solo, aloha_mobile)",
+            default_value="aloha_stationary",
+            description="Name of the robot configuration file (e.g., aloha_stationary, aloha_solo, aloha_mobile)",
         )
     )
 
