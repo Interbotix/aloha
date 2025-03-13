@@ -10,6 +10,7 @@
   <buildtool_depend>ament_python</buildtool_depend>
 
   <depend>interbotix_common_modules</depend>
+  <depend>interbotix_gravity_compensation</depend>
   <depend>interbotix_ros_slate</depend>
   <depend>interbotix_xs_modules</depend>
   <depend>interbotix_xs_msgs</depend>

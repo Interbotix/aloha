@@ -255,12 +255,12 @@ def disable_gravity_compensation(bot: InterbotixManipulatorXS):
     gravity_compensation.disable()
 
 
-def load_yaml_file(config_type: str = "robot", name: str = "aloha_static", base_path: str = None) -> dict:
+def load_yaml_file(config_type: str = "robot", name: str = "aloha_stationary", base_path: str = None) -> dict:
     """
     Loads configuration from a YAML file based on the specified type and name.
 
     :param config_type: Type of configuration to load, e.g., 'robot' or 'task'. Defaults to 'robot'.
-    :param name: Name of the robot or task configuration to load. Defaults to 'aloha_static' for robots.
+    :param name: Name of the robot or task configuration to load. Defaults to 'aloha_stationary' for robots.
     :return: The loaded configuration as a dictionary.
     :raises FileNotFoundError: Raised if the specified configuration file does not exist.
     :raises RuntimeError: Raised if there is an error loading the YAML file.

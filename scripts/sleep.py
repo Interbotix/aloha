@@ -36,7 +36,7 @@ def main() -> None:
     argparser.add_argument(
         '-r', '--robot',
         required=True,
-        help='Specify the robot configuration to use: aloha_solo, aloha_static, or aloha_mobile.'
+        help='Specify the robot configuration to use: aloha_solo, aloha_stationary, or aloha_mobile.'
     )
     args = argparser.parse_args()
 

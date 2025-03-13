@@ -316,7 +316,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-r', '--robot',
         required=True,
-        help='Specify the robot configuration to use: aloha_solo, aloha_static, or aloha_mobile.'
+        help='Specify the robot configuration to use: aloha_solo, aloha_stationary, or aloha_mobile.'
     )
 
     parser.add_argument('--ismirror', action='store_true')

@@ -33,7 +33,7 @@ def main(args: Dict[str, any]) -> None:
     :param args: Dictionary of command-line arguments, including:
         - 'dataset_dir' (str): Path to the directory containing episode datasets.
         - 'episode_idx' (int): Index of the episode file to load.
-        - 'robot' (str): Robot configuration name (e.g., 'aloha_solo', 'aloha_static', 'aloha_mobile').
+        - 'robot' (str): Robot configuration name (e.g., 'aloha_solo', 'aloha_stationary', 'aloha_mobile').
     """
     # Load robot configuration
     robot_base = args.get('robot', '')
@@ -135,7 +135,7 @@ if __name__ == '__main__':
         '-r', '--robot',
         action='store',
         type=str,
-        help='Robot configuration name (e.g., aloha_solo, aloha_static, aloha_mobile).',
+        help='Robot configuration name (e.g., aloha_solo, aloha_stationary, aloha_mobile).',
         required=True,
     )
 

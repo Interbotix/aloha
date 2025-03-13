@@ -450,7 +450,7 @@ def main(args: Dict[str, any]) -> None:
     :param args: Dictionary of arguments, expected keys:
         - "enable_base_torque" (bool): Whether to enable torque on the base (for mobile robots).
         - "gravity_compensation" (bool): Whether to enable gravity compensation for leader robots.
-        - "robot" (str): Robot setup configuration (e.g., 'aloha_solo', 'aloha_static', 'aloha_mobile').
+        - "robot" (str): Robot setup configuration (e.g., 'aloha_solo', 'aloha_stationary', 'aloha_mobile').
         - "task_name" (str): Task name used to fetch specific task configuration.
         - "episode_idx" (Optional[int]): Episode index for dataset naming; if None, auto-indexing is used.
     """
@@ -552,7 +552,7 @@ if __name__ == "__main__":
         "--robot",
         action="store",
         type=str,
-        help="Robot setup configuration (e.g., aloha_solo, aloha_static, aloha_mobile).",
+        help="Robot setup configuration (e.g., aloha_solo, aloha_stationary, aloha_mobile).",
         required=True,
     )
 
